@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
-using Serilog.Sinks.SystemConsole.Themes;
 
 namespace MessengerServicePublisher.Infrastructure.Logger
 {
@@ -20,7 +19,6 @@ namespace MessengerServicePublisher.Infrastructure.Logger
             loggerConfiguration
                     .MinimumLevel.Information()
                     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-                    .WriteTo.Async(a => a.Console(theme: AnsiConsoleTheme.Code))
                     .Enrich.FromLogContext()
                     .Enrich.WithMachineName()
                     .Enrich.WithThreadId();

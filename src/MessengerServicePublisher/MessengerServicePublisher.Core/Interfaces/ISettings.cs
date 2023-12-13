@@ -11,5 +11,7 @@
         string Company { get; set; }
         string Definition { get; set; }
         string HostNameRabbitMQ { get; set; }
+        string UserNameRabbitMQ { get; set; }
+        string PasswordNameRabbitMQ { get; set; }
     }
 }

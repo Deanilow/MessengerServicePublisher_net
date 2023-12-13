@@ -3,25 +3,27 @@ using Google.Apis.Gmail.v1;
 using Google.Apis.Gmail.v1.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
-using MessengerServicePublisher.Core.Common;
+using MassTransit.Transports;
 using MessengerServicePublisher.Core.Entities;
 using MessengerServicePublisher.Core.Interfaces;
 using MessengerServicePublisher.Core.Model;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using System.Text;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace MessengerServicePublisher.Core.Services
 {
     public class EntryPointGmailService : IEntryPointGmailService
     {
         private readonly ISettings _appSettings;
-        private readonly ILoggerAdapter<EntryPointGmailService> _logger;
+        private readonly ILogger<EntryPointGmailService> _logger;
         private readonly IServiceLocator _serviceScopeFactoryLocator;
         private readonly IMemoryCache _memoryCache;
-        public EntryPointGmailService(ISettings appSettings, ILoggerAdapter<EntryPointGmailService> logger, IMemoryCache memoryCache, IServiceLocator serviceScopeFactoryLocator)
+        public EntryPointGmailService(ISettings appSettings, ILogger<EntryPointGmailService> logger, IMemoryCache memoryCache, IServiceLocator serviceScopeFactoryLocator)
         {
             _appSettings = appSettings;
             _logger = logger;
@@ -39,25 +41,30 @@ namespace MessengerServicePublisher.Core.Services
 
                 if (listMessagesImbox != null && listMessagesImbox.Count > 0)
                 {
-                    var ListDistinctFromNumber = listMessagesImbox.GroupBy(x => x.message.from).Select(g => g.First()).ToList();
+                    var ListDistinctFromNumber = listMessagesImbox.GroupBy(x => x.data.from).Select(g => g.First()).ToList();
 
                     for (int i = 0; i < ListDistinctFromNumber.Count; i++)
                     {
-                        var Queue = $"messagesPending-{ListDistinctFromNumber[i].message.from}";
+                        var Queue = $"messagesPending-{ListDistinctFromNumber[i].data.from}";
 
                         _logger.LogInformation($"Se Envia por RabbitMQ  a Queue : {Queue} y json : {System.Text.Json.JsonSerializer.Serialize(ListDistinctFromNumber)}");
 
-                        //var factory = new ConnectionFactory() { HostName = _appSettings.HostNameRabbitMQ };
-                        //using (var connection = factory.CreateConnection())
-                        //using (var channel = connection.CreateModel())
-                        //{
-                        //    channel.QueueDeclare(queue: Queue, durable: false, exclusive: false, autoDelete: false, arguments: null);
+                        var factory = new ConnectionFactory()
+                        {
+                            HostName = _appSettings.HostNameRabbitMQ,
+                            UserName = _appSettings.UserNameRabbitMQ,
+                            Password = _appSettings.PasswordNameRabbitMQ
+                        };
+                        using (var connection = factory.CreateConnection())
+                        using (var channel = connection.CreateModel())
+                        {
+                            channel.QueueDeclare(queue: Queue, durable: true, exclusive: false, autoDelete: false, arguments: new Dictionary<string, object> { { "x-queue-type", "quorum" } });
 
-                        //    var stringContent = JsonConvert.SerializeObject(listMessagesImbox);
-                        //    var body = Encoding.UTF8.GetBytes(stringContent);
+                            var stringContent = JsonConvert.SerializeObject(listMessagesImbox);
+                            var body = Encoding.UTF8.GetBytes(stringContent);
 
-                        //    channel.BasicPublish(exchange: "", routingKey: Queue, basicProperties: null, body: body);
-                        //}
+                            channel.BasicPublish(exchange: "", routingKey: Queue, basicProperties: null, body: body);
+                        }
                     }
                 }
 
@@ -72,6 +79,7 @@ namespace MessengerServicePublisher.Core.Services
         {
             try
             {
+                List<Data> dataListMessage = new();
 
                 var companySetting = _appSettings.Company;
 
@@ -79,15 +87,13 @@ namespace MessengerServicePublisher.Core.Services
 
                 var SenderPhoneSetting = _appSettings.SenderPhone;
 
-                List<Data> dataListMessage = new();
-
                 var serviceGmail = await GetConnection();
 
-                var messagesGmail = await GetMessages(serviceGmail);
+                var mailsGmail = await GetMessages(serviceGmail);
 
-                _logger.LogInformation("Se obtuvo " + messagesGmail.Count() + " mensajes de Gmail");
+                _logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
 
-                foreach (var objMessageGmail in messagesGmail)
+                foreach (var objMessageGmail in mailsGmail)
                 {
                     Message objMessage = serviceGmail.Users.Messages.Get("me", objMessageGmail.Id).Execute();
 
@@ -162,19 +168,22 @@ namespace MessengerServicePublisher.Core.Services
                             objGmailSetting.Description = objGmailSetting.Description.Replace(variable, value);
                         }
 
-
                         foreach (var item in subject.Split(';'))
                         {
                             dataListMessage.Add(new Data()
                             {
-                                message = new MessageModel()
+                                data = new MessageModel()
                                 {
-                                    to = item.ToString(),
+                                    to = "51900262844",
+                                    //to = item.ToString(),
                                     from = SenderPhoneSetting,
-                                    messages = new MessagesDetailModel()
-                                    {
+                                    messages = new List<MessagesDetailModel>() {
+                                        new MessagesDetailModel()
+                                        {
                                         text = objGmailSetting.Description,
-                                        fileUrl = ""
+                                        fileUrl = "",
+                                        order = 1
+                                     }
                                     }
                                 }
                             });

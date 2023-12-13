@@ -13,5 +13,7 @@ namespace MessengerServicePublisher.Core.Common
         public string Company { get; set; }
         public string Definition { get; set; }
         public string HostNameRabbitMQ { get; set; }
+        public string UserNameRabbitMQ { get; set; }
+        public string PasswordNameRabbitMQ { get; set; }
     }
 }
