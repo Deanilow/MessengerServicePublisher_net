@@ -13,7 +13,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using System.Text;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace MessengerServicePublisher.Core.Services
 {
@@ -103,7 +102,7 @@ namespace MessengerServicePublisher.Core.Services
 
                     if (string.IsNullOrEmpty(subject))
                     {
-                        //MarkAsRead(serviceGmail, objMessageGmail);
+                        MarkAsRead(serviceGmail, objMessageGmail);
                         break;
                     }
 
@@ -113,7 +112,7 @@ namespace MessengerServicePublisher.Core.Services
 
                     if (variablesBodyGmail.Length <= 0)
                     {
-                        //MarkAsRead(serviceGmail, objMessageGmail);
+                        MarkAsRead(serviceGmail, objMessageGmail);
                         break;
                     }
 
@@ -129,17 +128,21 @@ namespace MessengerServicePublisher.Core.Services
                     }
                     using var scope = _serviceScopeFactoryLocator.CreateScope();
 
-                    var repository =
+                    var repositoryGmailSettings =
                         scope.ServiceProvider
                             .GetService<IGmailSettingRepository>();
 
+                    var repositoryMessages =
+                       scope.ServiceProvider
+                           .GetService<IMessagesRepository>();
+
                     if (companySetting.Contains("Prosegur"))
                     {
-                        var cacheDataGmailSetting = _memoryCache.Get<IEnumerable<GmailSetting>>("ListGmailSetting");
+                        var cacheDataGmailSetting = _memoryCache.Get<IEnumerable<GmailSettings>>("ListGmailSetting");
 
                         if (cacheDataGmailSetting is null)
                         {
-                            cacheDataGmailSetting = await repository.GetGmailSettingByCompanyAsync(companySetting);
+                            cacheDataGmailSetting = await repositoryGmailSettings.GetGmailSettingByCompanyAsync(companySetting);
                             _memoryCache.Set("ListGmailSetting", cacheDataGmailSetting);
                         }
 
@@ -147,7 +150,7 @@ namespace MessengerServicePublisher.Core.Services
 
                         if (string.IsNullOrEmpty(variable1Gmail))
                         {
-                            //MarkAsRead(serviceGmail, objMessageGmail);
+                            MarkAsRead(serviceGmail, objMessageGmail);
                             break;
                         }
 
@@ -155,7 +158,7 @@ namespace MessengerServicePublisher.Core.Services
 
                         if (objGmailSetting is null)
                         {
-                            //MarkAsRead(serviceGmail, objMessageGmail);
+                            MarkAsRead(serviceGmail, objMessageGmail);
                             break;
                         }
 
@@ -170,9 +173,9 @@ namespace MessengerServicePublisher.Core.Services
 
                         foreach (var item in subject.Split(';'))
                         {
-                            dataListMessage.Add(new Data()
+                            var objData = new Data()
                             {
-                                data = new MessageModel()
+                                data = new MessagesModel()
                                 {
                                     to = "51900262844",
                                     //to = item.ToString(),
@@ -186,12 +189,28 @@ namespace MessengerServicePublisher.Core.Services
                                      }
                                     }
                                 }
-                            });
+                            };
+
+                            var objInsertResult = await repositoryMessages.Add(new Messages()
+                            {
+                                To = objData.data.to,
+                                From = objData.data.from,
+                                Company = companySetting,
+                                Definition = DefinitionSetting,
+                                SubjectGmail = subject,
+                                BodyGmail = textBodyGmail,
+                                Status = "Pendiente",
+                                MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
+                            }
+                            );
+
+                            objData.data.id = objInsertResult.Id;
+
+                            dataListMessage.Add(objData);
                         }
                     }
-                    //MarkAsRead(serviceGmail, objMessageGmail);
+                    MarkAsRead(serviceGmail, objMessageGmail);
                 }
-
                 return dataListMessage;
             }
             catch (Exception ex)
@@ -296,7 +315,7 @@ namespace MessengerServicePublisher.Core.Services
             request.RemoveLabelIds = new List<string>() { "UNREAD" };
 
             UsersResource.MessagesResource.ModifyRequest modRequest = service.Users.Messages.Modify(request, "me", mensaje.Id);
-            modRequest.Execute();
+            //modRequest.Execute();
         }
 
         private async Task<IEnumerable<Message>> GetMessages(GmailService gmailService)

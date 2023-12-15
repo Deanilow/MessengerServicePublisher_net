@@ -1,4 +1,5 @@
 ﻿using MessengerServicePublisher.Core.Entities;
+using MessengerServicePublisher.Core.Entities;
 using MessengerServicePublisher.Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +11,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Repositories
         {
         }
 
-        public async Task<List<GmailSetting>> GetGmailSettingByCompanyAsync(string Company) =>
+        public async Task<List<GmailSettings>> GetGmailSettingByCompanyAsync(string Company) =>
             await _dbContext.GmailSettings.Where(user => user.Company == Company).ToListAsync();
     }
 }

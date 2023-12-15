@@ -12,7 +12,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "GmailSetting",
+                name: "GmailSettings",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -29,11 +29,37 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_GmailSetting", x => x.Id);
+                    table.PrimaryKey("PK_GmailSettings", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "User",
+                name: "Messages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Company = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Definition = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SubjectGmail = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    BodyGmail = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    To = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    From = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    MessagesDetail = table.Column<string>(type: "nvarchar(max)", maxLength: 2147483647, nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Active = table.Column<bool>(type: "bit", nullable: false),
+                    Created = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Udpated = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Deleted = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Messages", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Users",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -50,12 +76,12 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_User", x => x.Id);
+                    table.PrimaryKey("PK_Users", x => x.Id);
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_User_Email",
-                table: "User",
+                table: "Users",
                 column: "Email",
                 unique: true);
 
@@ -83,7 +109,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Prosegur += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Prosegur", Definition_Prosegur, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -108,7 +134,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Contacto += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Contacto", Definition_Contacto, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -126,7 +152,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             //Definition_Armado += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             //migrationBuilder.InsertData(
-            //table: "GmailSetting",
+            //table: "GmailSettings",
             //columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             //values: new object[] { Guid.NewGuid(), "PROSEGUR", "CONTACTO", Definition_Armado, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -143,7 +169,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             //Definition_Alerta += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             //migrationBuilder.InsertData(
-            //table: "GmailSetting",
+            //table: "GmailSettings",
             //columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             //values: new object[] { Guid.NewGuid(), "PROSEGUR", "Alerta", Definition_Alerta, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -166,7 +192,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Gps += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Gps", Definition_Gps, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -184,7 +210,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Call += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Call", Definition_Call, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -206,7 +232,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Fallaac += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Fallaac", Definition_Fallaac, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -241,7 +267,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Qido1 += $"*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Qido1", Definition_Qido1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -263,7 +289,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Qido2 += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Qido2", Definition_Qido2, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -287,7 +313,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Caida += "*_informativos. PROSEGUR ACTIVA PERU S.A. - 20517930998_*\n";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Caida", Definition_Caida, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -313,7 +339,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Intento", Definition_Intento, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -331,7 +357,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Cotizacion += "*_informativos. PROSEGUR ACTIVA PERU S.A. - 20517930998_*\n";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Cotizacion", Definition_Cotizacion, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -349,7 +375,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_AlarmaPanico += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "AlarmaPanico", Definition_AlarmaPanico, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -370,7 +396,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Notificacion1 += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Notificacion1", Definition_Notificacion1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -389,7 +415,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Aniego += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Aniego", Definition_Aniego, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -410,7 +436,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Programacion1 += "📌 Si requiere mayor información contáctenos al *(01)5138686* o a nuestro WhatsApp *Aquí*: wa.link/4usuq1.";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion1", Definition_Programacion1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -431,7 +457,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Programacion2 += "*_informativos. PROSEGUR ACTIVA PERU S.A. - 20517930998_*\n";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion2", Definition_Programacion2, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -452,7 +478,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Programacion3 += "*_informativos. PROSEGUR ACTIVA PERU S.A. - 20517930998_*\n";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion3", Definition_Programacion3, true, DateTime.UtcNow, "Created", null, null, null, null });
 
@@ -467,20 +493,22 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Programacion4 += "*_informativos. PROSEGUR ACTIVA PERU S.A. - 20517930998_*\n";
 
             migrationBuilder.InsertData(
-            table: "GmailSetting",
+            table: "GmailSettings",
             columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
             values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion4", Definition_Programacion4, true, DateTime.UtcNow, "Created", null, null, null, null });
-
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "GmailSetting");
+                name: "GmailSettings");
 
             migrationBuilder.DropTable(
-                name: "User");
+                name: "Messages");
+
+            migrationBuilder.DropTable(
+                name: "Users");
         }
     }
 }

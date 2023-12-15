@@ -1,7 +1,8 @@
 ﻿namespace MessengerServicePublisher.Core.Model
 {
-    public class MessageModel
+    public class MessagesModel
     {
+        public Guid id { get; set; }
         public string to { get; set; }
         public string from { get; set; }
         public List<MessagesDetailModel> messages { get; set; }
@@ -15,6 +16,6 @@
 
     public class Data
     {
-        public MessageModel data { get; set; }
+        public MessagesModel data { get; set; }
     }
 }

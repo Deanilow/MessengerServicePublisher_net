@@ -4,6 +4,6 @@ namespace MessengerServicePublisher.Core.Interfaces
 {
     public interface IGmailSettingRepository : IBaseRepository
     {
-        Task<List<GmailSetting>> GetGmailSettingByCompanyAsync(string Company);
+        Task<List<GmailSettings>> GetGmailSettingByCompanyAsync(string Company);
     }
 }

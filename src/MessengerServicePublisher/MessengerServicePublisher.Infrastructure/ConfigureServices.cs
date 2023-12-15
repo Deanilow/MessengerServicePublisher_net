@@ -22,6 +22,7 @@ public static class ConfigureServices
         services.AddScoped<IBaseRepository, BaseRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IGmailSettingRepository, GmailSettingRepository>();
+        services.AddScoped<IMessagesRepository, MessagesRepository>();
         //services.AddScoped<IUnityOfWork, UnityOfWork>();
         return services;
     }

@@ -7,8 +7,9 @@ namespace MessengerServicePublisher.Infrastructure.Data
 {
     public class ApplicationDbContext : DbContext
     {
-        public virtual DbSet<User> Users { get; set; }
-        public virtual DbSet<GmailSetting> GmailSettings { get; set; }
+        public virtual DbSet<Users> Users { get; set; }
+        public virtual DbSet<GmailSettings> GmailSettings { get; set; }
+        public virtual DbSet<Messages> Messages { get; set; }
 
         private readonly AuditableEntitySaveChangesInterceptor _auditableEntitySaveChangesInterceptor;
 

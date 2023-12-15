@@ -36,9 +36,10 @@ namespace MessengerServicePublisher.Infrastructure.Data.Config
                 {
                     entry.Entity.CreatedBy = string.Empty;
                     entry.Entity.Created = DateTime.UtcNow;
+                    entry.Entity.Active = true;
                 }
 
-                if (entry.State == EntityState.Added || entry.State == EntityState.Modified ||
+                if (entry.State == EntityState.Modified ||
                     entry.HasChangedOwnedEntities())
                 {
                     entry.Entity.UpdatedBy = string.Empty;

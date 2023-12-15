@@ -1,6 +1,6 @@
 ﻿namespace MessengerServicePublisher.Core.Entities
 {
-    public class User : BaseEntity
+    public class Users : BaseEntity
     {
         public string Name { get; set; }
         public string Email { get; set; }

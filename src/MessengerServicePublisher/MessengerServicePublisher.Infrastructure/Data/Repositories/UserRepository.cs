@@ -10,7 +10,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Repositories
         {
         }
 
-        public async Task<User> GetByEmailAsync(string email) =>
+        public async Task<Users> GetByEmailAsync(string email) =>
             await _dbContext.Users.FirstOrDefaultAsync(user => user.Email == email);
     }
 }
