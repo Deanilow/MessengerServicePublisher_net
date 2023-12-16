@@ -28,6 +28,6 @@ namespace MessengerServicePublisher.Worker
             }
         }
 
-        public TimeSpan Interval => TimeSpan.FromSeconds(5);
+        public TimeSpan Interval => TimeSpan.FromSeconds(6);
     }
 }

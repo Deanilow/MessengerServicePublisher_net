@@ -11,8 +11,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using RabbitMQ.Client;
-using System.Text;
 
 namespace MessengerServicePublisher.Core.Services
 {
@@ -34,36 +32,34 @@ namespace MessengerServicePublisher.Core.Services
         {
             try
             {
-                _logger.LogInformation("ExecuteAsync EntryPointGmailService");
+                _logger.LogInformation($"ExecuteAsync EntryPointGmailService {DateTime.Now.ToString("HH:mm:ss tt")}");
 
                 var listMessagesImbox = await GetMessagesImbox();
 
                 if (listMessagesImbox != null && listMessagesImbox.Count > 0)
                 {
-                    var ListDistinctFromNumber = listMessagesImbox.GroupBy(x => x.data.from).Select(g => g.First()).ToList();
-
-                    for (int i = 0; i < ListDistinctFromNumber.Count; i++)
+                    for (int i = 0; i < listMessagesImbox.Count; i++)
                     {
-                        var Queue = $"messagesPending-{ListDistinctFromNumber[i].data.from}";
+                        var Queue = $"messagesPending-{listMessagesImbox[i].data.from}";
 
-                        _logger.LogInformation($"Se Envia por RabbitMQ  a Queue : {Queue} y json : {System.Text.Json.JsonSerializer.Serialize(ListDistinctFromNumber)}");
+                        _logger.LogInformation($"Se Envia por RabbitMQ  a Queue : {Queue} y json : {System.Text.Json.JsonSerializer.Serialize(listMessagesImbox)}");
 
-                        var factory = new ConnectionFactory()
-                        {
-                            HostName = _appSettings.HostNameRabbitMQ,
-                            UserName = _appSettings.UserNameRabbitMQ,
-                            Password = _appSettings.PasswordNameRabbitMQ
-                        };
-                        using (var connection = factory.CreateConnection())
-                        using (var channel = connection.CreateModel())
-                        {
-                            channel.QueueDeclare(queue: Queue, durable: true, exclusive: false, autoDelete: false, arguments: new Dictionary<string, object> { { "x-queue-type", "quorum" } });
+                        //var factory = new ConnectionFactory()
+                        //{
+                        //    HostName = _appSettings.HostNameRabbitMQ,
+                        //    UserName = _appSettings.UserNameRabbitMQ,
+                        //    Password = _appSettings.PasswordNameRabbitMQ
+                        //};
+                        //using (var connection = factory.CreateConnection())
+                        //using (var channel = connection.CreateModel())
+                        //{
+                        //    channel.QueueDeclare(queue: Queue, durable: true, exclusive: false, autoDelete: false, arguments: new Dictionary<string, object> { { "x-queue-type", "quorum" } });
 
-                            var stringContent = JsonConvert.SerializeObject(listMessagesImbox);
-                            var body = Encoding.UTF8.GetBytes(stringContent);
+                        //    var stringContent = JsonConvert.SerializeObject(listMessagesImbox);
+                        //    var body = Encoding.UTF8.GetBytes(stringContent);
 
-                            channel.BasicPublish(exchange: "", routingKey: Queue, basicProperties: null, body: body);
-                        }
+                        //    channel.BasicPublish(exchange: "", routingKey: Queue, basicProperties: null, body: body);
+                        //}
                     }
                 }
 
@@ -86,9 +82,15 @@ namespace MessengerServicePublisher.Core.Services
 
                 var SenderPhoneSetting = _appSettings.SenderPhone;
 
+                _logger.LogInformation($"ExecuteAsync 1");
+
                 var serviceGmail = await GetConnection();
 
+                _logger.LogInformation($"ExecuteAsync 2");
+
                 var mailsGmail = await GetMessages(serviceGmail);
+
+                _logger.LogInformation($"ExecuteAsync 3");
 
                 _logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
 

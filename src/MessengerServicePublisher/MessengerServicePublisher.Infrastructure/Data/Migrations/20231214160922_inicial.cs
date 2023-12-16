@@ -383,7 +383,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             string Definition_Notificacion1 = string.Empty;
             Definition_Notificacion1 += "*PROSEGUR*\n";
             Definition_Notificacion1 += "\n";
-            Definition_Notificacion1 += "🚨 Le informa que ha tenido *UN EVENTO DE ALARMA*  en el local:{va41} ubicado en (var2) \n";
+            Definition_Notificacion1 += "🚨 Le informa que ha tenido *UN EVENTO DE ALARMA*  en el local:(var1) ubicado en (var2) \n";
             Definition_Notificacion1 += "\n";
             Definition_Notificacion1 += "✅  Para mayor información comunicarse con nuestra Central de Atención al Cliente. \n";
             Definition_Notificacion1 += "\n";
