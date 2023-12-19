@@ -447,7 +447,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Programacion2 += "Hemos intentado contactarlo(a) *sin éxito* 😔 para coordinar la fecha de su visita técnica ya que no  \n";
             Definition_Programacion2 += "ha sido posible programar la atención para el *(var2)*.\n";
             Definition_Programacion2 += "\n";
-            Definition_Programacion2 += "Sin embargo; la fecha más próxima disponible 📆 que podemos ofrecer es para el*(var3)* en el  \n";
+            Definition_Programacion2 += "Sin embargo; la fecha más próxima disponible 📆 que podemos ofrecer es para el *(var3)* en el  \n";
             Definition_Programacion2 += "rango horario de *(var4)*.\n";
             Definition_Programacion2 += "\n";
             Definition_Programacion2 += "📌 Agradeceremos *CONFIRMAR* la agenda técnica Aquí 👉 https://wa.link/9dgfdw en un *plazo \n";
@@ -468,7 +468,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
             Definition_Programacion3 += "Te saludamos de PROSEGUR, queremos informarte que no ha sido posible programar la atención \n";
             Definition_Programacion3 += "técnica para el *(var2)* 😔.\n";
             Definition_Programacion3 += "\n";
-            Definition_Programacion3 += "Sin embargo; la fecha más próxima disponible 📆 que podemos ofrecer es para el *{var3)}* en el \n";
+            Definition_Programacion3 += "Sin embargo; la fecha más próxima disponible 📆 que podemos ofrecer es para el *(var3)* en el \n";
             Definition_Programacion3 += "rango horario de *(var4)*.\n";
             Definition_Programacion3 += "\n";
             Definition_Programacion3 += "📌 Agradeceremos *CONFIRMAR* la agenda técnica *Aquí* 👉 https://wa.link/9dgfdw en un *plazo* \n";

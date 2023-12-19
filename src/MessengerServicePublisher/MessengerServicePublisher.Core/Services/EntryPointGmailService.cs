@@ -1,16 +1,14 @@
-﻿using Google.Apis.Auth.OAuth2;
-using Google.Apis.Gmail.v1;
-using Google.Apis.Gmail.v1.Data;
-using Google.Apis.Services;
-using Google.Apis.Util.Store;
+﻿using Google.Apis.Gmail.v1.Data;
 using MassTransit.Transports;
 using MessengerServicePublisher.Core.Entities;
+using MessengerServicePublisher.Core.Helper;
 using MessengerServicePublisher.Core.Interfaces;
 using MessengerServicePublisher.Core.Model;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Text;
 
 namespace MessengerServicePublisher.Core.Services
 {
@@ -82,41 +80,23 @@ namespace MessengerServicePublisher.Core.Services
 
                 var SenderPhoneSetting = _appSettings.SenderPhone;
 
-                _logger.LogInformation($"ExecuteAsync 1");
+                var service = GmailHelper.GetGmailService(_appSettings.NameProyectoGmail, _appSettings.ClientIdGmail, _appSettings.ClientSecretGmail);
 
-                var serviceGmail = await GetConnection();
-
-                _logger.LogInformation($"ExecuteAsync 2");
-
-                var mailsGmail = await GetMessages(serviceGmail);
-
-                _logger.LogInformation($"ExecuteAsync 3");
+                var mailsGmail = service.GetMessages(query: $"from:{_appSettings.SenderGmail} is:unread", markRead: true);
 
                 _logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
 
                 foreach (var objMessageGmail in mailsGmail)
                 {
-                    Message objMessage = serviceGmail.Users.Messages.Get("me", objMessageGmail.Id).Execute();
-
-                    var subject = objMessage.Payload.Headers.FirstOrDefault(h => h.Name == "Subject")?.Value ?? "";
+                    var subject = objMessageGmail.Payload.Headers.FirstOrDefault(x => x.Name == "Subject").Value ?? "";
 
                     subject = filterNumberText(subject);
 
-                    if (string.IsNullOrEmpty(subject))
-                    {
-                        MarkAsRead(serviceGmail, objMessageGmail);
-                        break;
-                    }
+                    if (string.IsNullOrEmpty(subject)) break;
 
-                    string textBodyGmail = GetBodyMessage(objMessage);
+                    string textBodyGmail = GmailHelper.GetBodyTextMessage(objMessageGmail);
 
                     var variablesBodyGmail = textBodyGmail.Split(';');
-
-                    if (variablesBodyGmail.Length <= 0)
-                    {
-                        MarkAsRead(serviceGmail, objMessageGmail);
-                        break;
-                    }
 
                     var objArrayVariablesGmail = new object[variablesBodyGmail.Length];
 
@@ -128,6 +108,7 @@ namespace MessengerServicePublisher.Core.Services
                             Value = variablesBodyGmail[i].Trim()
                         };
                     }
+
                     using var scope = _serviceScopeFactoryLocator.CreateScope();
 
                     var repositoryGmailSettings =
@@ -150,19 +131,11 @@ namespace MessengerServicePublisher.Core.Services
 
                         var variable1Gmail = objArrayVariablesGmail.First().GetType().GetProperty("Value")?.GetValue(objArrayVariablesGmail.First())?.ToString();
 
-                        if (string.IsNullOrEmpty(variable1Gmail))
-                        {
-                            MarkAsRead(serviceGmail, objMessageGmail);
-                            break;
-                        }
-
+                        if (string.IsNullOrEmpty(variable1Gmail)) break;
+                    
                         var objGmailSetting = cacheDataGmailSetting.FirstOrDefault(x => x.Definition.ToUpper() == variable1Gmail);
 
-                        if (objGmailSetting is null)
-                        {
-                            MarkAsRead(serviceGmail, objMessageGmail);
-                            break;
-                        }
+                        if (objGmailSetting is null) break;
 
                         foreach (var itemVariableGmail in objArrayVariablesGmail)
                         {
@@ -193,7 +166,7 @@ namespace MessengerServicePublisher.Core.Services
                                 }
                             };
 
-                            var objInsertResult = await repositoryMessages.Add(new Messages()
+                            var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
                             {
                                 To = objData.data.to,
                                 From = objData.data.from,
@@ -211,7 +184,6 @@ namespace MessengerServicePublisher.Core.Services
                             dataListMessage.Add(objData);
                         }
                     }
-                    MarkAsRead(serviceGmail, objMessageGmail);
                 }
                 return dataListMessage;
             }
@@ -244,132 +216,10 @@ namespace MessengerServicePublisher.Core.Services
             return int.TryParse(valor, out _);
         }
 
-        private static string DownloadAttachments(GmailService service, List<MessagePart> partesMensaje, string idMensaje, string pathTemp)
-        {
-            string filePaths = "";
-
-            foreach (var parte in partesMensaje)
-            {
-                if (!string.IsNullOrEmpty(parte.Filename))
-                {
-                    string fileName = Path.Combine(pathTemp, parte.Filename);
-
-                    string attId = parte.Body.AttachmentId;
-
-                    MessagePartBody attachPart = service.Users.Messages.Attachments.Get("me", idMensaje, attId).Execute();
-
-                    var asdasd = attachPart.Data.Replace('-', '+').Replace('_', '/');
-
-                    byte[] data = Convert.FromBase64String(asdasd);
-
-                    using (var stream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
-                    {
-                        stream.Write(data, 0, data.Length);
-                    }
-                    filePaths = filePaths + fileName + ";";
-                }
-            }
-
-            return filePaths;
-        }
-
-        private static string GetBodyMessage(Message mensaje)
-        {
-            string body = "";
-
-            if (mensaje.Payload.Parts != null)
-            {
-                foreach (var parte in mensaje.Payload.Parts)
-                {
-                    if (parte.MimeType == "multipart/alternative")
-                    {
-                        foreach (var parteInterna in parte.Parts)
-                        {
-                            if (parteInterna.MimeType == "text/plain" || parteInterna.MimeType == "text/html")
-                            {
-                                body = Base64Decode(parteInterna.Body.Data.Trim().Replace('-', '+').Replace('_', '/'));
-                                break;
-                            }
-                        }
-                    }
-                    else if (parte.MimeType == "text/plain" || parte.MimeType == "text/html")
-                    {
-                        body = Base64Decode(parte.Body.Data.Trim().Replace('-', '+').Replace('_', '/'));
-                        break;
-                    }
-                }
-            }
-            else if (!string.IsNullOrEmpty(mensaje.Payload.Body?.Data))
-            {
-                body = Base64Decode(mensaje.Payload.Body.Data.Trim().Replace('-', '+').Replace('_', '/'));
-            }
-
-            return body;
-        }
         private static string Base64Decode(string base64EncodedData)
         {
-            var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
-            return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
-        }
-        private static void MarkAsRead(GmailService service, Message mensaje)
-        {
-            ModifyMessageRequest request = new ModifyMessageRequest();
-            request.RemoveLabelIds = new List<string>() { "UNREAD" };
-
-            UsersResource.MessagesResource.ModifyRequest modRequest = service.Users.Messages.Modify(request, "me", mensaje.Id);
-            //modRequest.Execute();
-        }
-
-        private async Task<IEnumerable<Message>> GetMessages(GmailService gmailService)
-        {
-            try
-            {
-                var request = gmailService.Users.Messages.List("me");
-
-                request.Q = $"from:{_appSettings.SenderGmail}";
-
-                request.Q += " is:unread";
-
-                var response = await request.ExecuteAsync();
-
-                if (response != null && response.Messages != null)
-                {
-                    return response.Messages;
-                }
-
-                return Enumerable.Empty<Message>();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        private async Task<GmailService> GetConnection()
-        {
-            string[] scopes = new string[] { GmailService.Scope.GmailModify };
-
-            UserCredential credential;
-
-            credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                new ClientSecrets()
-                {
-                    ClientId = _appSettings.ClientIdGmail,
-                    ClientSecret = _appSettings.ClientSecretGmail
-                },
-                scopes,
-                "user",
-                CancellationToken.None,
-                new FileDataStore("Gmail.Api.Auth.Store")).Result;
-
-            var service = new GmailService(new BaseClientService.Initializer()
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = _appSettings.NameProyectoGmail,
-            });
-
-            return service;
+            byte[] base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
+            return Encoding.UTF8.GetString(base64EncodedBytes);
         }
     }
-
 }

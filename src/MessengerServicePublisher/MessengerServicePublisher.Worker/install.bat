@@ -22,11 +22,6 @@ if exist "%scriptPath%%name%.json" (
   )
 )
 
-REM Leer el valor de "INSTANCES" del archivo JSON
-for /f "tokens=2 delims=:," %%b in ('type "%jsonFilePath%" ^| find /i "INSTANCES"') do set "instances=%%~b"
-set "instances=%instances:"=%"
-set "instances=%instances: =%"
-
 REM Construir las rutas con doble barra invertida
 set "executablePath=%scriptPath%MessengerServicePublisher.Worker.exe"
 set "executablePath=%executablePath:\=\\%"
