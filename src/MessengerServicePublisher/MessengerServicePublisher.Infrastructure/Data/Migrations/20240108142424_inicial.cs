@@ -19,6 +19,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                     Company = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Definition = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", maxLength: 2147483647, nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
                     Active = table.Column<bool>(type: "bit", nullable: false),
                     Created = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -85,6 +86,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                 column: "Email",
                 unique: true);
 
+
             string Definition_Prosegur = string.Empty;
             Definition_Prosegur += $"*PROSEGUR*\n";
             Definition_Prosegur += "🚨 Le informa que ha tenido un\n";
@@ -110,8 +112,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Prosegur", Definition_Prosegur, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Prosegur", Definition_Prosegur, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Contacto = string.Empty;
@@ -135,43 +137,61 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Contacto", Definition_Contacto, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Contacto", Definition_Contacto, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
-            //string Definition_Armado = string.Empty;
+            string Definition_Acuda = string.Empty;
 
-            //Definition_Armado += "*PROSEGUR*\n";
-            //Definition_Armado += "🚨 Tarea asignada\n";
-            //Definition_Armado += "para el abonado, (var1)\n";
-            //Definition_Armado += "ubicado en, (var2),\n";
-            //Definition_Armado += "en el distrito, (var3)\n";
-            //Definition_Armado += "📌 Ten en cuenta que de encontrar alguna novedad\n";
-            //Definition_Armado += "comunícate con la central para iniciar la operativa.\n";
-            //Definition_Armado += "\n";
-            //Definition_Armado += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
+            Definition_Acuda += "*PROSEGUR*\n";
+            Definition_Acuda += "🚨 Tarea asignada\n";
+            Definition_Acuda += "para el abonado, (var1)\n";
+            Definition_Acuda += "ubicado en, (var2),\n";
+            Definition_Acuda += "en el distrito, (var3)\n";
+            Definition_Acuda += "📌 Ten en cuenta que de encontrar alguna novedad\n";
+            Definition_Acuda += "comunícate con la central para iniciar la operativa.\n";
+            Definition_Acuda += "\n";
+            Definition_Acuda += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
-            //migrationBuilder.InsertData(
-            //table: "GmailSettings",
-            //columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            //values: new object[] { Guid.NewGuid(), "PROSEGUR", "CONTACTO", Definition_Armado, true, DateTime.UtcNow, "Created", null, null, null, null });
+            migrationBuilder.InsertData(
+            table: "GmailSettings",
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Acuda", Definition_Acuda, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
-            //string Definition_Alerta = string.Empty;
+            string Definition_Armado = string.Empty;
 
-            //Definition_Alerta += "*PROSEGUR*\n";
-            //Definition_Alerta += "🚨 Tarea asignada\n";
-            //Definition_Alerta += "para el abonado, (var1)\n";
-            //Definition_Alerta += "ubicado en, (var2),\n";
-            //Definition_Alerta += "en el distrito, (var3)\n";
-            //Definition_Alerta += "📌 Ten en cuenta que de encontrar alguna novedad\n";
-            //Definition_Alerta += "comunícate con la central para iniciar la operativa.\n";
-            //Definition_Alerta += "\n";
-            //Definition_Alerta += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
+            Definition_Armado += "||📌🚔. ❌ (var2)\n||";
+            Definition_Armado += "||(var3)\n||";
+            Definition_Armado += "||(var4)\n||";
+            Definition_Armado += "||(var5)\n||";
+            Definition_Armado += "||(var6)\n||";
+            Definition_Armado += "_Por favor no responder a este_\n";
+            Definition_Armado += "_número ya que está destinado_\n";
+            Definition_Armado += "_únicamente para fines informativos_\n";
+            Definition_Armado += "_del negocio._\n";
+            Definition_Armado += "\n";
+            Definition_Armado += "*_PROSEGUR ACTIVA PERÚ S.A. -20517930998_*";
 
-            //migrationBuilder.InsertData(
-            //table: "GmailSettings",
-            //columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            //values: new object[] { Guid.NewGuid(), "PROSEGUR", "Alerta", Definition_Alerta, true, DateTime.UtcNow, "Created", null, null, null, null });
+            migrationBuilder.InsertData(
+            table: "GmailSettings",
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Armado", Definition_Armado, 2, true, DateTime.UtcNow, "Created", null, null, null, null });
+
+
+
+            string Definition_Alerta = string.Empty;
+
+            Definition_Alerta += "||(var1)\n||";
+            Definition_Alerta += "||CLIENTE: (var2)\n||";
+            Definition_Alerta += "||DIRECCIÓN: (var3)\n||";
+            Definition_Alerta += "||COORDENADAS: https://maps.google.com/?q=(var4),(var5)\n||";
+            Definition_Alerta += "||FECHA: (var6)\n||";
+            Definition_Alerta += "||EVENTO: (var7)\n||";
+
+            migrationBuilder.InsertData(
+            table: "GmailSettings",
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Armado", Definition_Alerta, 2, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Gps = string.Empty;
@@ -193,8 +213,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Gps", Definition_Gps, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Gps", Definition_Gps, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Call = string.Empty;
@@ -211,8 +231,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Call", Definition_Call, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Call", Definition_Call, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Fallaac = string.Empty;
@@ -233,8 +253,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Fallaac", Definition_Fallaac, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Fallaac", Definition_Fallaac, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Qido1 = string.Empty;
@@ -268,8 +288,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Qido1", Definition_Qido1, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Qido1", Definition_Qido1, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Qido2 = string.Empty;
@@ -290,8 +310,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Qido2", Definition_Qido2, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Qido2", Definition_Qido2, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Caida = string.Empty;
@@ -314,8 +334,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Caida", Definition_Caida, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Caida", Definition_Caida, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Intento = string.Empty;
@@ -340,8 +360,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Intento", Definition_Intento, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Intento", Definition_Intento, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Cotizacion = string.Empty;
@@ -358,8 +378,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Cotizacion", Definition_Cotizacion, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Cotizacion", Definition_Cotizacion, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_AlarmaPanico = string.Empty;
@@ -376,8 +396,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "AlarmaPanico", Definition_AlarmaPanico, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "AlarmaPanico", Definition_AlarmaPanico, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Notificacion1 = string.Empty;
@@ -397,8 +417,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Notificacion1", Definition_Notificacion1, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Notificacion1", Definition_Notificacion1, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Aniego = string.Empty;
@@ -416,8 +436,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Aniego", Definition_Aniego, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Aniego", Definition_Aniego, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Programacion1 = string.Empty;
@@ -437,8 +457,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion1", Definition_Programacion1, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion1", Definition_Programacion1, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Programacion2 = string.Empty;
@@ -458,8 +478,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion2", Definition_Programacion2, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion2", Definition_Programacion2, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Programacion3 = string.Empty;
@@ -479,8 +499,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion3", Definition_Programacion3, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion3", Definition_Programacion3, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
 
 
             string Definition_Programacion4 = string.Empty;
@@ -494,9 +514,12 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
             migrationBuilder.InsertData(
             table: "GmailSettings",
-            columns: new[] { "Id", "Company", "Definition", "Description", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
-            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion4", Definition_Programacion4, true, DateTime.UtcNow, "Created", null, null, null, null });
+            columns: new[] { "Id", "Company", "Definition", "Description", "Type", "Active", "Created", "CreatedBy", "Udpated", "UpdatedBy", "Deleted", "DeletedBy", },
+            values: new object[] { Guid.NewGuid(), "PROSEGUR", "Programacion4", Definition_Programacion4, 1, true, DateTime.UtcNow, "Created", null, null, null, null });
+
         }
+
+
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)

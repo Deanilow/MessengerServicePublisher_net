@@ -58,6 +58,9 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                         .HasMaxLength(2147483647)
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("Udpated")
                         .HasColumnType("datetime2");
 

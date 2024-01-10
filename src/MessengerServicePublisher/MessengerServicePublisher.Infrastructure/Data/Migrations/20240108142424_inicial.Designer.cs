@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20231214160922_inicial")]
+    [Migration("20240108142424_inicial")]
     partial class inicial
     {
         /// <inheritdoc />
@@ -60,6 +60,9 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(2147483647)
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("Udpated")
                         .HasColumnType("datetime2");

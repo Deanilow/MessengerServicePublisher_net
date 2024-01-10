@@ -6,8 +6,8 @@ set "scriptPath=%~dp0"
 REM Construir la ruta del archivo JSON de configuración
 set "jsonFilePath=%scriptPath%appsettings.Development.json"
 
-REM Leer el valor de "NameServiceWindows" del archivo JSON y limpiar espacios en blanco
-for /f "tokens=2 delims=:," %%a in ('type "%jsonFilePath%" ^| find /i "NameServiceWindows"') do set "name=%%~a"
+REM Leer el valor de "NameService" del archivo JSON y limpiar espacios en blanco
+for /f "tokens=2 delims=:," %%a in ('type "%jsonFilePath%" ^| find /i "NameService"') do set "name=%%~a"
 set "name=%name:"=%"
 set "name=%name: =%"
 

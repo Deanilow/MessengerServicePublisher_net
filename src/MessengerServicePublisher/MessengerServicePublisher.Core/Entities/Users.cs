@@ -1,9 +1,9 @@
 ﻿namespace MessengerServicePublisher.Core.Entities
 {
-    public class Users : BaseEntity
+    public class SenderSettings : BaseEntity
     {
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public string From { get; set; }
+        public string To { get; set; }
+        public string Body { get; set; }
     }
 }

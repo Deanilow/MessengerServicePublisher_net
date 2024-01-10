@@ -1,5 +1,4 @@
-﻿using Google.Apis.Gmail.v1.Data;
-using MassTransit.Transports;
+﻿using MassTransit.Transports;
 using MessengerServicePublisher.Core.Entities;
 using MessengerServicePublisher.Core.Helper;
 using MessengerServicePublisher.Core.Interfaces;
@@ -8,7 +7,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MessengerServicePublisher.Core.Services
 {
@@ -32,15 +31,36 @@ namespace MessengerServicePublisher.Core.Services
             {
                 _logger.LogInformation($"ExecuteAsync EntryPointGmailService {DateTime.Now.ToString("HH:mm:ss tt")}");
 
-                var listMessagesImbox = await GetMessagesImbox();
+                var listMessages = new List<Data>();
 
-                if (listMessagesImbox != null && listMessagesImbox.Count > 0)
+                var companySetting = _appSettings.Company.ToUpper();
+
+                var BdSetting = bool.Parse(_appSettings.Bd.ToUpper() ?? "False");
+
+                var DefinitionSetting = _appSettings.Definition.ToUpper();
+
+                var SenderPhoneSetting = _appSettings.SenderPhone;
+
+                switch (companySetting)
                 {
-                    for (int i = 0; i < listMessagesImbox.Count; i++)
-                    {
-                        var Queue = $"messagesPending-{listMessagesImbox[i].data.from}";
+                    case "PROSEGUR":
+                        if (!BdSetting) listMessages = await GetMessagesImboxProsegurGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
+                        break;
+                    case "BIDASSOA":
+                        if (!BdSetting) listMessages = await GetMessagesImboxBidassoaGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
+                        if (BdSetting) listMessages = await GetMessagesBidassoaBd(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
+                        break;
+                    default:
+                        break;
+                }
 
-                        _logger.LogInformation($"Se Envia por RabbitMQ  a Queue : {Queue} y json : {System.Text.Json.JsonSerializer.Serialize(listMessagesImbox)}");
+                if (listMessages != null && listMessages.Count > 0)
+                {
+                    for (int i = 0; i < listMessages.Count; i++)
+                    {
+                        var Queue = $"messagesPending-{listMessages[i].data.from}";
+
+                        _logger.LogInformation($"Se Envia por RabbitMQ  a Queue : {Queue} y json : {System.Text.Json.JsonSerializer.Serialize(listMessages[i])}");
 
                         //var factory = new ConnectionFactory()
                         //{
@@ -68,35 +88,24 @@ namespace MessengerServicePublisher.Core.Services
                 _logger.LogInformation("EXCEPTION EntryPointGmailService " + ex.Message.ToString());
             }
         }
-        private async Task<List<Data>> GetMessagesImbox()
+        private async Task<List<Data>> GetMessagesImboxProsegurGmail(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
         {
             try
             {
                 List<Data> dataListMessage = new();
 
-                var companySetting = _appSettings.Company;
 
-                var DefinitionSetting = _appSettings.Definition;
+                var service = GmailHelper.GetGmailService(applicationName: _appSettings.NameProyectoGmail, ClientId: _appSettings.ClientIdGmail, ClientSecret: _appSettings.ClientSecretGmail);
 
-                var SenderPhoneSetting = _appSettings.SenderPhone;
-
-                var service = GmailHelper.GetGmailService(_appSettings.NameProyectoGmail, _appSettings.ClientIdGmail, _appSettings.ClientSecretGmail);
-
-                var mailsGmail = service.GetMessages(query: $"from:{_appSettings.SenderGmail} is:unread", markRead: true);
+                var mailsGmail = service.GetMessages(query: $"from:{_appSettings.SenderGmail} is:unread", markRead: false, filterDefinitionTextBody: DefinitionSetting);
 
                 _logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
 
                 foreach (var objMessageGmail in mailsGmail)
                 {
-                    var subject = objMessageGmail.Payload.Headers.FirstOrDefault(x => x.Name == "Subject").Value ?? "";
+                    var subject = filterNumberText(objMessageGmail.subject);
 
-                    subject = filterNumberText(subject);
-
-                    if (string.IsNullOrEmpty(subject)) break;
-
-                    string textBodyGmail = GmailHelper.GetBodyTextMessage(objMessageGmail);
-
-                    var variablesBodyGmail = textBodyGmail.Split(';');
+                    var variablesBodyGmail = objMessageGmail.body.Split(';');
 
                     var objArrayVariablesGmail = new object[variablesBodyGmail.Length];
 
@@ -119,72 +128,85 @@ namespace MessengerServicePublisher.Core.Services
                        scope.ServiceProvider
                            .GetService<IMessagesRepository>();
 
-                    if (companySetting.Contains("Prosegur"))
+                    var cacheDataGmailSetting = _memoryCache.Get<IEnumerable<GmailSettings>>("ListGmailSetting");
+
+                    if (cacheDataGmailSetting is null)
                     {
-                        var cacheDataGmailSetting = _memoryCache.Get<IEnumerable<GmailSettings>>("ListGmailSetting");
+                        cacheDataGmailSetting = await repositoryGmailSettings.GetGmailSettingByCompanyAsync(companySetting);
+                        _memoryCache.Set("ListGmailSetting", cacheDataGmailSetting);
+                    }
 
-                        if (cacheDataGmailSetting is null)
+                    var variable1Gmail = objArrayVariablesGmail.First().GetType().GetProperty("Value")?.GetValue(objArrayVariablesGmail.First())?.ToString();
+
+                    //if (string.IsNullOrEmpty(variable1Gmail)) break;
+
+                    var objGmailSetting = cacheDataGmailSetting.FirstOrDefault(x => x.Definition.ToUpper() == variable1Gmail);
+
+                    //if (objGmailSetting is null) break;
+
+                    foreach (var itemVariableGmail in objArrayVariablesGmail)
+                    {
+                        string variable = itemVariableGmail.GetType().GetProperty("Variable")?.GetValue(itemVariableGmail)?.ToString() ?? "";
+
+                        string value = itemVariableGmail.GetType().GetProperty("Value")?.GetValue(itemVariableGmail)?.ToString() ?? "";
+
+                        objGmailSetting.Description = objGmailSetting.Description.Replace(variable, value);
+                    }
+
+                    switch (objGmailSetting.Type)
+                    {
+                        case 1:
+                            break;
+                        case 2:
+                            objGmailSetting.Description = ProcessMessageType2(objGmailSetting.Description);
+                            break;
+                        default:
+                            break;
+                    }
+
+                    foreach (var item in subject.Split(';'))
+                    {
+                        var objData = new Data()
                         {
-                            cacheDataGmailSetting = await repositoryGmailSettings.GetGmailSettingByCompanyAsync(companySetting);
-                            _memoryCache.Set("ListGmailSetting", cacheDataGmailSetting);
-                        }
-
-                        var variable1Gmail = objArrayVariablesGmail.First().GetType().GetProperty("Value")?.GetValue(objArrayVariablesGmail.First())?.ToString();
-
-                        if (string.IsNullOrEmpty(variable1Gmail)) break;
-                    
-                        var objGmailSetting = cacheDataGmailSetting.FirstOrDefault(x => x.Definition.ToUpper() == variable1Gmail);
-
-                        if (objGmailSetting is null) break;
-
-                        foreach (var itemVariableGmail in objArrayVariablesGmail)
-                        {
-                            string variable = itemVariableGmail.GetType().GetProperty("Variable")?.GetValue(itemVariableGmail)?.ToString() ?? "";
-
-                            string value = itemVariableGmail.GetType().GetProperty("Value")?.GetValue(itemVariableGmail)?.ToString() ?? "";
-
-                            objGmailSetting.Description = objGmailSetting.Description.Replace(variable, value);
-                        }
-
-                        foreach (var item in subject.Split(';'))
-                        {
-                            var objData = new Data()
+                            data = new MessagesModel()
                             {
-                                data = new MessagesModel()
-                                {
-                                    to = "51900262844",
-                                    //to = item.ToString(),
-                                    from = SenderPhoneSetting,
-                                    messages = new List<MessagesDetailModel>() {
+                                //to = "51900262844",
+                                to = item.ToString(),
+                                from = string.Empty,
+                                messages = new List<MessagesDetailModel>() {
                                         new MessagesDetailModel()
                                         {
                                         text = objGmailSetting.Description,
                                         fileUrl = "",
                                         order = 1
                                      }
-                                    }
                                 }
-                            };
-
-                            var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
-                            {
-                                To = objData.data.to,
-                                From = objData.data.from,
-                                Company = companySetting,
-                                Definition = DefinitionSetting,
-                                SubjectGmail = subject,
-                                BodyGmail = textBodyGmail,
-                                Status = "Pendiente",
-                                MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
                             }
-                            );
+                        };
 
-                            objData.data.id = objInsertResult.Id;
-
-                            dataListMessage.Add(objData);
+                        var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
+                        {
+                            To = objData.data.to,
+                            From = objData.data.from,
+                            Company = companySetting,
+                            Definition = DefinitionSetting,
+                            SubjectGmail = objMessageGmail.subject,
+                            BodyGmail = objMessageGmail.body,
+                            Status = "Pendiente",
+                            MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
                         }
+                        );
+
+                        objData.data.id = objInsertResult.Id;
+
+                        dataListMessage.Add(objData);
                     }
                 }
+
+                var cantSenders = SenderPhoneSetting.Split(';');
+
+                if (cantSenders.Count() > 0) dataListMessage = DistribuirListado(dataListMessage, SenderPhoneSetting.Split(';'));
+
                 return dataListMessage;
             }
             catch (Exception ex)
@@ -194,6 +216,178 @@ namespace MessengerServicePublisher.Core.Services
             }
         }
 
+        private async Task<List<Data>> GetMessagesImboxBidassoaGmail(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
+        {
+            try
+            {
+                List<Data> dataListMessage = new();
+
+                var service = GmailHelper.GetGmailService(applicationName: _appSettings.NameProyectoGmail, ClientId: _appSettings.ClientIdGmail, ClientSecret: _appSettings.ClientSecretGmail);
+
+                var mailsGmail = service.GetMessages(query: $"from:{_appSettings.SenderGmail} is:unread", markRead: true, filterDefinitionTextBody: DefinitionSetting);
+
+                _logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
+
+                foreach (var objMessageGmail in mailsGmail)
+                {
+                    using var scope = _serviceScopeFactoryLocator.CreateScope();
+
+                    var repositoryMessages =
+                       scope.ServiceProvider
+                           .GetService<IMessagesRepository>();
+
+
+                    foreach (var item in objMessageGmail.subject.Split(';'))
+                    {
+                        var objData = new Data()
+                        {
+                            data = new MessagesModel()
+                            {
+                                //to = "51900262844",
+                                to = item.ToString(),
+                                from = string.Empty,
+                                messages = new List<MessagesDetailModel>() {
+                                        new MessagesDetailModel()
+                                        {
+                                        text = objMessageGmail.body,
+                                        fileUrl = "",
+                                        order = 1
+                                     }
+                                 }
+                            }
+                        };
+
+                        var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
+                        {
+                            To = objData.data.to,
+                            From = objData.data.from,
+                            Company = companySetting,
+                            Definition = DefinitionSetting,
+                            SubjectGmail = objMessageGmail.subject,
+                            BodyGmail = objMessageGmail.body,
+                            Status = "Pendiente",
+                            MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
+                        }
+                        );
+
+                        objData.data.id = objInsertResult.Id;
+
+                        dataListMessage.Add(objData);
+                    }
+                }
+
+                var cantSenders = SenderPhoneSetting.Split(';');
+
+                if (cantSenders.Count() > 0) dataListMessage = DistribuirListado(dataListMessage, SenderPhoneSetting.Split(';'));
+
+                return dataListMessage;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error en GetMessagesImbox : " + ex.Message.ToString());
+                return (List<Data>)Enumerable.Empty<Data>();
+            }
+        }
+        private async Task<List<Data>> GetMessagesBidassoaBd(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
+        {
+            //try
+            //{
+            //    List<Data> dataListMessage = new();
+
+            //    //_logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
+
+            //    foreach (var objMessageGmail in mailsGmail)
+            //    {
+            //        using var scope = _serviceScopeFactoryLocator.CreateScope();
+
+            //        var repositoryMessages =
+            //           scope.ServiceProvider
+            //               .GetService<IMessagesRepository>();
+
+            //        foreach (var item in objMessageGmail.subject.Split(';'))
+            //        {
+            //            var objData = new Data()
+            //            {
+            //                data = new MessagesModel()
+            //                {
+            //                    //to = "51900262844",
+            //                    to = item.ToString(),
+            //                    from = string.Empty,
+            //                    messages = new List<MessagesDetailModel>() {
+            //                            new MessagesDetailModel()
+            //                            {
+            //                            text = objMessageGmail.body,
+            //                            fileUrl = "",
+            //                            order = 1
+            //                         }
+            //                     }
+            //                }
+            //            };
+
+            //            var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
+            //            {
+            //                To = objData.data.to,
+            //                From = objData.data.from,
+            //                Company = companySetting,
+            //                Definition = DefinitionSetting,
+            //                SubjectGmail = objMessageGmail.subject,
+            //                BodyGmail = objMessageGmail.body,
+            //                Status = "Pendiente",
+            //                MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
+            //            }
+            //            );
+
+            //            objData.data.id = objInsertResult.Id;
+
+            //            dataListMessage.Add(objData);
+            //        }
+            //    }
+
+            //    var cantSenders = SenderPhoneSetting.Split(';');
+
+            //    if (cantSenders.Count() > 0) dataListMessage = DistribuirListado(dataListMessage, SenderPhoneSetting.Split(';'));
+
+            //    return dataListMessage;
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.LogInformation("Error en GetMessagesImbox : " + ex.Message.ToString());
+            return (List<Data>)Enumerable.Empty<Data>();
+            //}
+        }
+
+        private static string ProcessMessageType2(string input)
+        {
+            // Dividir la cadena en fragmentos usando "||" como delimitador
+            string[] fragments = input.Split(new[] { "||" }, StringSplitOptions.RemoveEmptyEntries);
+
+            // Filtrar las secciones que contienen "(varx)"
+            fragments = Array.FindAll(fragments, fragment => !Regex.IsMatch(fragment, @"\(\bvar[1-9]\b\)"));
+
+            // Concatenar los fragmentos en un solo string
+            string result = string.Join("", fragments);
+
+            return result.Trim();
+        }
+        private List<Data> DistribuirListado(List<Data> listado1, string[] arrays1)
+        {
+            int cantidadArrays = arrays1.Length;
+            int indiceArray = 0;
+
+            // Crear una nueva lista para evitar modificar la lista original
+            List<Data> listadoActualizado = new List<Data>(listado1);
+
+            foreach (var item in listadoActualizado)
+            {
+                // Reemplazar el campo "from" con el valor correspondiente de arrays1
+                item.data.from = arrays1[indiceArray];
+
+                // Mover al siguiente índice de arrays1
+                indiceArray = (indiceArray + 1) % cantidadArrays;
+            }
+
+            return listadoActualizado;
+        }
         private static string filterNumberText(string texto)
         {
             // Separamos la cadena por ;.
@@ -214,12 +408,6 @@ namespace MessengerServicePublisher.Core.Services
         private static bool EsNumero(string valor)
         {
             return int.TryParse(valor, out _);
-        }
-
-        private static string Base64Decode(string base64EncodedData)
-        {
-            byte[] base64EncodedBytes = Convert.FromBase64String(base64EncodedData);
-            return Encoding.UTF8.GetString(base64EncodedBytes);
         }
     }
 }

@@ -3,6 +3,8 @@ using Google.Apis.Gmail.v1;
 using Google.Apis.Gmail.v1.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
+using MessengerServicePublisher.Core.Model;
+using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -111,8 +113,8 @@ namespace MessengerServicePublisher.Core.Helper
         {
             _scopes = new List<string>();
             _applicationName = applicationName;
-            _scopes.Add(GmailService.Scope.GmailMetadata);
-            _scopes.Add(GmailService.Scope.GmailReadonly);
+            //_scopes.Add(GmailService.Scope.GmailMetadata);
+            //_scopes.Add(GmailService.Scope.GmailReadonly);
             _scopes.Add(GmailService.Scope.GmailModify);
             _scopes.Add(GmailService.Scope.GmailLabels);
             UserCredential credential;
@@ -209,11 +211,11 @@ namespace MessengerServicePublisher.Core.Helper
         /// <param name="userId">User's email address. 'User Id' for request to authenticate. Default - 'me (authenticated user)'.</param>
         /// <param name="disposeGmailService">Boolean value to choose whether to dispose Gmail service instance used or not. Default - 'true'.</param>
         /// <returns>List of email messages matching the search criteria.</returns>
-        public static List<Message> GetMessages(this GmailService gmailService, string query, bool markRead = false, string userId = "me", bool disposeGmailService = true)
+        public static List<MessageGmail> GetMessages(this GmailService gmailService, string query, bool markRead, string filterDefinitionTextBody, string userId = "me", bool disposeGmailService = true)
         {
             var service = gmailService;
             List<Message> result = new List<Message>();
-            List<Message> messages = new List<Message>();
+            List<MessageGmail> messages = new List<MessageGmail>();
             UsersResource.MessagesResource.ListRequest request = service.Users.Messages.List(userId);
             request.Q = query;
             do
@@ -228,11 +230,54 @@ namespace MessengerServicePublisher.Core.Helper
                 var messageRequest = service.Users.Messages.Get(userId, message.Id);
                 messageRequest.Format = UsersResource.MessagesResource.GetRequest.FormatEnum.Full;
                 var currentMessage = messageRequest.Execute();
-                messages.Add(currentMessage);
-                if (markRead)
+
+
+                var objMesasge = new MessageGmail()
                 {
-                    var labelToRemove = new List<string> { "UNREAD" };
-                    service.RemoveLabels(message.Id, labelToRemove, userId: userId);
+                    subject = currentMessage.Payload.Headers.FirstOrDefault(x => x.Name == "Subject").Value ?? "",
+                    body = GetBodyTextMessage(currentMessage)
+                };
+
+                if (!string.IsNullOrEmpty(filterDefinitionTextBody))
+                {
+                    if (objMesasge.subject.Split(';').Count() <= 0)
+                    {
+                        var labelToRemove = new List<string> { "UNREAD" };
+                        service.RemoveLabels(message.Id, labelToRemove, userId: userId);
+                    }
+                    else
+                    {
+                        if (objMesasge.body.Split(';').Count() <= 0 || objMesasge.body.Length == 0)
+                        {
+                            var labelToRemove = new List<string> { "UNREAD" };
+                            service.RemoveLabels(message.Id, labelToRemove, userId: userId);
+                        }
+                        else
+                        {
+                            var firstVariable = objMesasge.body.Split(';')[0].ToUpper().Trim();
+
+                            if (filterDefinitionTextBody.Contains(firstVariable))
+                            {
+                                messages.Add(objMesasge);
+
+                                if (markRead)
+                                {
+                                    var labelToRemove = new List<string> { "UNREAD" };
+                                    service.RemoveLabels(message.Id, labelToRemove, userId: userId);
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    messages.Add(objMesasge);
+
+                    if (markRead)
+                    {
+                        var labelToRemove = new List<string> { "UNREAD" };
+                        service.RemoveLabels(message.Id, labelToRemove, userId: userId);
+                    }
                 }
             }
             if (disposeGmailService)

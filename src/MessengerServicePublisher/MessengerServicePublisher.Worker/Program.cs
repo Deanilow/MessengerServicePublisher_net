@@ -36,8 +36,16 @@ var host = Host.CreateDefaultBuilder(args)
         var applicationSettings = Configuration.GetSection("AppSettings").Get<Settings>();
         services.AddSingleton<ISettings, Settings>(e => applicationSettings);
 
-        services.AddBackgroundJobs()
-          .AddJob<Worker>();
+
+        if (string.IsNullOrEmpty(applicationSettings.EverySecond))
+        {
+            services.AddBackgroundJobs().AddJob<WorkerOne>();
+        }
+        else
+        {
+            services.AddBackgroundJobs().AddJob<WorkerJob>();
+        }
+
     })
     .Build();
 
