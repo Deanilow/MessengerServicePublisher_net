@@ -19,7 +19,6 @@ var host = Host.CreateDefaultBuilder(args)
          LoggerConfigurationExtensions.SetupLoggerConfiguration(hostContext);
      })
     .UseSerilog()
-    .UseWindowsService()
     .ConfigureHostConfiguration(configureHost =>
     {
         configureHost.AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")}.json", false, true);

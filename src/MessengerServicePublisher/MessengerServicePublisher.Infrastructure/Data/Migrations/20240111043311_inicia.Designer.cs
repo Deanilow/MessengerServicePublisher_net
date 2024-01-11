@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240108142424_inicial")]
-    partial class inicial
+    [Migration("20240111043311_inicia")]
+    partial class inicia
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -31,9 +31,6 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("Active")
-                        .HasColumnType("bit");
-
                     b.Property<string>("Company")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -47,8 +44,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
                     b.Property<string>("Definition")
                         .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime?>("Deleted")
                         .HasColumnType("datetime2");
@@ -72,7 +69,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("GmailSettings", (string)null);
+                    b.ToTable("GmailSettings", "wsp");
                 });
 
             modelBuilder.Entity("MessengerServicePublisher.Core.Entities.Messages", b =>
@@ -80,13 +77,6 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("Active")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("BodyGmail")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Company")
                         .IsRequired()
@@ -122,14 +112,14 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("SubjectGmail")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("StatusDescription")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<string>("To")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime?>("Udpated")
                         .HasColumnType("datetime2");
@@ -139,22 +129,25 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Messages", (string)null);
+                    b.ToTable("Messages", "wsp");
                 });
 
-            modelBuilder.Entity("MessengerServicePublisher.Core.Entities.Users", b =>
+            modelBuilder.Entity("MessengerServicePublisher.Core.Entities.MessagesPreviews", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<bool>("Active")
-                        .HasColumnType("bit");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Definition")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("Deleted")
@@ -163,20 +156,23 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
+                    b.Property<string>("FileUrl")
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<string>("From")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("Password")
+                    b.Property<string>("Text")
                         .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("To")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime?>("Udpated")
                         .HasColumnType("datetime2");
@@ -186,11 +182,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique()
-                        .HasDatabaseName("IX_User_Email");
-
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("MessagesPreviews", "wsp");
                 });
 #pragma warning restore 612, 618
         }

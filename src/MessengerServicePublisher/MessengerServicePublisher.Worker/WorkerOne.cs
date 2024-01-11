@@ -14,10 +14,10 @@ namespace MessengerServicePublisher.Worker
         }
         public async Task RunJobAsync(CancellationToken cancellationToken = default)
         {
-            //await _entryPointService.ExecuteAsync();
+            await _entryPointService.ExecuteAsync();
         }
 
-        public DateTime ScheduledTimeUtc => _utcNowAtStartup.AddMinutes(1);
+        public DateTime ScheduledTimeUtc => _utcNowAtStartup.AddSeconds(5);
 
     }
 }

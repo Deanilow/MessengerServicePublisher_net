@@ -1,17 +1,17 @@
-﻿    using MessengerServicePublisher.Core.Entities;
-    using MessengerServicePublisher.Infrastructure.Data.Config;
-    using Microsoft.EntityFrameworkCore;
-    using System.Reflection;
+﻿using MessengerServicePublisher.Core.Entities;
+using MessengerServicePublisher.Infrastructure.Data.Config;
+using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
-    namespace MessengerServicePublisher.Infrastructure.Data
-    {
-        public class ApplicationDbContext : DbContext
+namespace MessengerServicePublisher.Infrastructure.Data
+{
+    public class ApplicationDbContext : DbContext
         {
-            public virtual DbSet<Users> Users { get; set; }
             public virtual DbSet<GmailSettings> GmailSettings { get; set; }
             public virtual DbSet<Messages> Messages { get; set; }
+            public virtual DbSet<MessagesPreviews> MessagesPreviews { get; set; }
 
-            private readonly AuditableEntitySaveChangesInterceptor _auditableEntitySaveChangesInterceptor;
+        private readonly AuditableEntitySaveChangesInterceptor _auditableEntitySaveChangesInterceptor;
 
             public ApplicationDbContext(
                 DbContextOptions<ApplicationDbContext> options,
@@ -25,7 +25,11 @@
             {
                 builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-                base.OnModelCreating(builder);
+            builder.Entity<GmailSettings>().ToTable("GmailSettings", "wsp");
+            builder.Entity<Messages>().ToTable("Messages", "wsp");
+            builder.Entity<MessagesPreviews>().ToTable("MessagesPreviews", "wsp");
+
+            base.OnModelCreating(builder);
             }
 
             protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

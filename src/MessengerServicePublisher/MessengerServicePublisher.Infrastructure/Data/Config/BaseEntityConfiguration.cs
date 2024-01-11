@@ -12,14 +12,14 @@ namespace MessengerServicePublisher.Infrastructure.Data.Config
             builder.HasQueryFilter(entity => entity.Deleted == null);
             builder.Property(entity => entity.Id);
             builder
-                .Property(entity => entity.Created)
-                .HasConversion(value => value, value => DateTime.SpecifyKind(value, DateTimeKind.Utc));
+                .Property(entity => entity.Created);
+            //.HasConversion(value => value, value => DateTime.SpecifyKind(value, DateTimeKind.Utc));
             builder
-                .Property(entity => entity.Udpated)
-                .HasConversion(value => value, value => value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : null);
+                .Property(entity => entity.Udpated);
+            //.HasConversion(value => value, value => value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : null);
             builder
-                .Property(entity => entity.Deleted)
-                .HasConversion(value => value, value => value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : null);
+                .Property(entity => entity.Deleted);
+                //.HasConversion(value => value, value => value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : null);
         }
     }
 }

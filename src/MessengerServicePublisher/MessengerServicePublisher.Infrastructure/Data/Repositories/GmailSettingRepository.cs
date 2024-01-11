@@ -1,5 +1,4 @@
 ﻿using MessengerServicePublisher.Core.Entities;
-using MessengerServicePublisher.Core.Entities;
 using MessengerServicePublisher.Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 

@@ -12,8 +12,9 @@ namespace MessengerServicePublisher.Infrastructure.Data.Config
 
             builder.ToTable("GmailSettings");
             builder.Property(entity => entity.Company).HasMaxLength(100).IsRequired();
-            builder.Property(entity => entity.Definition).HasMaxLength(120).IsRequired();
+            builder.Property(entity => entity.Definition).HasMaxLength(500).IsRequired();
             builder.Property(entity => entity.Description).HasMaxLength(int.MaxValue).IsRequired();
+            builder.Property(entity => entity.Type).IsRequired();
         }
     }
 }
