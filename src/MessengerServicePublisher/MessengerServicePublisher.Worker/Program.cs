@@ -35,16 +35,22 @@ var host = Host.CreateDefaultBuilder(args)
         var applicationSettings = Configuration.GetSection("AppSettings").Get<Settings>();
         services.AddSingleton<ISettings, Settings>(e => applicationSettings);
 
-
-        if (string.IsNullOrEmpty(applicationSettings.EverySecond))
+        if (applicationSettings.PermissionGmail.ToUpper() == "TRUE")
         {
-            services.AddBackgroundJobs().AddJob<WorkerOne>();
+            services.AddBackgroundJobs().AddJob<WorkerPermissionGmail>();
         }
         else
         {
-            services.AddBackgroundJobs().AddJob<WorkerJob>();
-        }
+            if (applicationSettings.Cycle == "1")
+            {
+                services.AddBackgroundJobs().AddJob<WorkerOne>();
+            }
 
+            if (applicationSettings.Cycle == "x")
+            {
+                services.AddBackgroundJobs().AddJob<WorkerJob>();
+            }
+        }
     })
     .Build();
 

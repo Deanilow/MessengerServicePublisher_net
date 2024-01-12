@@ -1,4 +1,5 @@
 ﻿using MassTransit.Transports;
+using MessengerServicePublisher.Core.Common;
 using MessengerServicePublisher.Core.Entities;
 using MessengerServicePublisher.Core.Helper;
 using MessengerServicePublisher.Core.Interfaces;
@@ -10,7 +11,6 @@ using Newtonsoft.Json;
 using RabbitMQ.Client;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 
 namespace MessengerServicePublisher.Core.Services
 {
@@ -27,18 +27,45 @@ namespace MessengerServicePublisher.Core.Services
             _memoryCache = memoryCache;
             _serviceScopeFactoryLocator = serviceScopeFactoryLocator;
         }
-
-        public async Task ExecuteAsync()
+        public async Task PermissonGmail()
         {
             try
             {
-                _logger.LogInformation($"ExecuteAsync EntryPointGmailService {DateTime.Now.ToString("HH:mm:ss tt")}");
+                _logger.LogInformation($"INIT PermissonGmail {DateTime.Now.ToString("HH:mm:ss tt")}");
+
+                for (int i = 0; i < 4; i++)
+                {
+                    var service = GmailHelper.GetGmailService(applicationName: _appSettings.NameProyectoGmail, ClientId: _appSettings.ClientIdGmail, ClientSecret: _appSettings.ClientSecretGmail);
+
+                    try
+                    {
+                        var mailsGmail = service.GetMessages(query: $"from:{_appSettings.SenderGmail}", markRead: false, filterDefinitionTextBody: _appSettings.Definition);
+
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
+
+                _logger.LogInformation("FIN PermissonGmail");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("EXCEPTION EntryPointGmailService " + ex.Message.ToString());
+            }
+        }
+        public async Task ExecuteWorker()
+        {
+            try
+            {
+                _logger.LogInformation($"INIT ExecuteWorker  {DateTime.Now.ToString("HH:mm:ss tt")}");
 
                 var listMessages = new List<Data>();
 
                 var companySetting = _appSettings.Company.ToUpper();
 
-                var BdSetting = bool.Parse(_appSettings.Bd.ToUpper() ?? "False");
+                var GetDataFrom = _appSettings.GetDataFrom.ToUpper();
 
                 var DefinitionSetting = _appSettings.Definition.ToUpper();
 
@@ -46,12 +73,12 @@ namespace MessengerServicePublisher.Core.Services
 
                 switch (companySetting)
                 {
-                    case "PROSEGUR":
-                        if (!BdSetting) listMessages = await GetMessagesImboxProsegurGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
+                    case Constans.COMANY_PROSEGUR:
+                        if (GetDataFrom == Constans.GMAIL) listMessages = await GetMessagesImboxProsegurGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
                         break;
-                    case "BIDASSOA":
-                        if (!BdSetting) listMessages = await GetMessagesImboxBidassoaGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
-                        if (BdSetting) listMessages = await GetMessagesBidassoaBd(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
+                    case Constans.COMANY_BIDASSOA:
+                        //if (GetDataFrom == Constans.GMAIL) listMessages = await GetMessagesImboxBidassoaGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
+                        if (GetDataFrom == Constans.BD) listMessages = await GetMessagesBidassoaBd(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
                         break;
                     default:
                         break;
@@ -61,7 +88,7 @@ namespace MessengerServicePublisher.Core.Services
                 {
                     for (int i = 0; i < listMessages.Count; i++)
                     {
-                        var Queue = $"messagesPending-{listMessages[i].data.from}";
+                        var Queue = $"{Constans.RABBITMQ_QUEUE}{listMessages[i].data.from}";
 
                         _logger.LogInformation($"Se Envia por RabbitMQ  a Queue : {Queue} y json : {System.Text.Json.JsonSerializer.Serialize(listMessages[i])}");
 
@@ -84,7 +111,7 @@ namespace MessengerServicePublisher.Core.Services
                     }
                 }
 
-                _logger.LogInformation("FIN EntryPointGmailService");
+                _logger.LogInformation("FIN ExecuteWorker");
             }
             catch (Exception ex)
             {
@@ -105,11 +132,11 @@ namespace MessengerServicePublisher.Core.Services
 
                 _logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
 
-                int indiceArray = 0;
+                int indexDistribution = 0;
 
                 foreach (var objMessageGmail in mailsGmail)
                 {
-                    var subject = filterNumberText(objMessageGmail.subject);
+                    var subject = FilterNumberText(objMessageGmail.subject);
 
                     var variablesBodyGmail = objMessageGmail.body.Split(';');
 
@@ -174,7 +201,7 @@ namespace MessengerServicePublisher.Core.Services
                             {
                                 to = "51917641085",
                                 //to = item.ToString(),
-                                from = arrayPhoneSenders[indiceArray],
+                                from = arrayPhoneSenders[indexDistribution],
                                 messages = new List<MessagesDetailModel>()
                                 {
                                         new MessagesDetailModel()
@@ -187,14 +214,14 @@ namespace MessengerServicePublisher.Core.Services
                         };
 
                         var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
-                        {
-                            To = objData.data.to,
-                            From = objData.data.from,
-                            Company = companySetting,
-                            Definition = DefinitionSetting,
-                            Status = "Pendiente",
-                            MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
-                        }
+                            {
+                                To = objData.data.to,
+                                From = objData.data.from,
+                                Company = companySetting,
+                                Definition = DefinitionSetting,
+                                Status = "Pendiente",
+                                MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
+                            }
                         );
 
                         objData.data.id = objInsertResult.Id;
@@ -202,8 +229,7 @@ namespace MessengerServicePublisher.Core.Services
                         dataListMessage.Add(objData);
                     }
                     //Destribuye a los telefonos asignado en SenderPhoneSetting
-
-                    indiceArray = (indiceArray + 1) % arrayPhoneSenders.Count;
+                    indexDistribution = (indexDistribution + 1) % arrayPhoneSenders.Count;
                 }
 
                 return dataListMessage;
@@ -214,7 +240,6 @@ namespace MessengerServicePublisher.Core.Services
                 return (List<Data>)Enumerable.Empty<Data>();
             }
         }
-
         private async Task<List<Data>> GetMessagesImboxBidassoaGmail(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
         {
             try
@@ -305,35 +330,78 @@ namespace MessengerServicePublisher.Core.Services
 
                 var listMessages = await repositoryMessagesPreviews.GetMessagesPreviewByDefinition(DefinitionSetting);
 
-                _logger.LogInformation("Se obtuvo " + listMessages.Count() + " correos de BD bidassoa");
+                _logger.LogInformation("Se obtuvo " + listMessages.Count() + " mensajes BD bidassoa");
 
                 var listMessagesWithSender = listMessages.Where(x => !string.IsNullOrEmpty(x.From)).ToList();
 
+                var distictFromNumberMessageSender = listMessagesWithSender.DistinctBy(x => x.From).Select(x => x.From).ToList();
+
+                foreach (var fromNumber in distictFromNumberMessageSender)
+                {
+                    var listMessagesFilter = listMessagesWithSender.Where(x => x.From == fromNumber);
+
+                    var distictTolistMessagestFilter = listMessagesFilter.DistinctBy(x => x.To).Select(x => x.To).ToList();
+
+                    foreach (var toNumber in distictTolistMessagestFilter)
+                    {
+                        var listMessagesOnlyTextFiter = listMessagesWithSender.Where(x => x.From == fromNumber && x.To == toNumber);
+
+                        List<MessagesDetailModel> listMessagesAdd = new List<MessagesDetailModel>();
+
+                        foreach (var item in listMessagesOnlyTextFiter)
+                        {
+                            var data = new MessagesDetailModel()
+                            {
+                                fileUrl = item.FileUrl ?? "",
+                                order = item.Id,
+                                text = item.Text 
+                            };
+
+                            listMessagesAdd.Add(data);
+                        }
+
+                        var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
+                        {
+                            To = toNumber,
+                            From = fromNumber,
+                            Company = companySetting,
+                            Definition = DefinitionSetting,
+                            Status = "Pendiente",
+                            MessagesDetail = JsonConvert.SerializeObject(listMessagesAdd)
+                        });
+
+                        var objData = new Data()
+                        {
+                            data = new MessagesModel()
+                            {
+                                to = toNumber,
+                                from = fromNumber,
+                                messages = listMessagesAdd.OrderBy(x => x.order).ToList()
+                            }
+                        };
+
+                        objData.data.id = objInsertResult.Id;
+
+                        dataListMessage.Add(objData);
+                    }
+                }
+
+
+
+                ///
                 var listMessagesWithNotSender = listMessages.Where(x => string.IsNullOrEmpty(x.From)).OrderBy(x => x.To).ToList();
-                var distictToNumberMessages = listMessagesWithNotSender.DistinctBy(x => x.To).Select(x => x.To).ToList();
+
+                var distictToNumberMessagesNotSender = listMessagesWithNotSender.DistinctBy(x => x.To).Select(x => x.To).ToList();
+
                 int indiceArray = 0;
 
-                foreach (var number in distictToNumberMessages)
+                foreach (var number in distictToNumberMessagesNotSender)
                 {
                     List<MessagesDetailModel> listMessagesAdd = new List<MessagesDetailModel>();
 
-                    var listMessagesOnlyText = listMessagesWithNotSender.Where(x => x.To == number && string.IsNullOrEmpty(x.FileUrl));
+                    var listMessagesNotSenderFilter = listMessagesWithNotSender.Where(x => x.To == number);
 
-                    foreach (var item in listMessagesOnlyText)
-                    {
-                        var objMessagesDetailModel = new MessagesDetailModel() 
-                        { 
-                            fileUrl = item.FileUrl,
-                            text = item.Text,
-                            order = item.Id,
-                        };
-
-                        listMessagesAdd.Add(objMessagesDetailModel);
-                    }
-
-                    var listMessagesOnlyFileUrl = listMessagesWithNotSender.Where(x => x.To == number && !string.IsNullOrEmpty(x.FileUrl));
-
-                    foreach (var item in listMessagesOnlyFileUrl)
+                    foreach (var item in listMessagesNotSenderFilter)
                     {
                         var objMessagesDetailModel = new MessagesDetailModel()
                         {
@@ -345,6 +413,20 @@ namespace MessengerServicePublisher.Core.Services
                         listMessagesAdd.Add(objMessagesDetailModel);
                     }
 
+                    //var listMessagesOnlyFileUrl = listMessagesWithNotSender.Where(x => x.To == number && !string.IsNullOrEmpty(x.FileUrl));
+
+                    //foreach (var item in listMessagesOnlyFileUrl)
+                    //{
+                    //    var objMessagesDetailModel = new MessagesDetailModel()
+                    //    {
+                    //        fileUrl = item.FileUrl,
+                    //        text = item.Text,
+                    //        order = item.Id,
+                    //    };
+
+                    //    listMessagesAdd.Add(objMessagesDetailModel);
+                    //}
+
 
                     var objData = new Data()
                     {
@@ -352,7 +434,7 @@ namespace MessengerServicePublisher.Core.Services
                         {
                             to = number,
                             from = arrayPhoneSenders[indiceArray],
-                            messages = listMessagesAdd.OrderBy(x=>x.order).ToList()
+                            messages = listMessagesAdd.OrderBy(x => x.order).ToList()
                         }
                     };
 
@@ -382,7 +464,6 @@ namespace MessengerServicePublisher.Core.Services
                 return (List<Data>)Enumerable.Empty<Data>();
             }
         }
-
         private static string ProcessMessageType2(string input)
         {
             // Dividir la cadena en fragmentos usando "||" como delimitador
@@ -396,7 +477,7 @@ namespace MessengerServicePublisher.Core.Services
 
             return result.Trim();
         }
-        private static string filterNumberText(string texto)
+        private static string FilterNumberText(string texto)
         {
             // Separamos la cadena por ;.
             string[] subcadenas = texto.Split(';');
@@ -412,7 +493,6 @@ namespace MessengerServicePublisher.Core.Services
 
             return textoModificado;
         }
-
         private static bool EsNumero(string valor)
         {
             return int.TryParse(valor, out _);

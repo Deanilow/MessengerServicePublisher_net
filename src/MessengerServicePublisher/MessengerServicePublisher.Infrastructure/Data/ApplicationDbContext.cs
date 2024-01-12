@@ -6,35 +6,43 @@ using System.Reflection;
 namespace MessengerServicePublisher.Infrastructure.Data
 {
     public class ApplicationDbContext : DbContext
-        {
-            public virtual DbSet<GmailSettings> GmailSettings { get; set; }
-            public virtual DbSet<Messages> Messages { get; set; }
-            public virtual DbSet<MessagesPreviews> MessagesPreviews { get; set; }
+    {
+        public virtual DbSet<GmailSettings> GmailSettings { get; set; }
+        public virtual DbSet<Messages> Messages { get; set; }
+        public virtual DbSet<MessagesPreviews> MessagesPreviews { get; set; }
+
+        //public DbSet<TimerSettings> TimerSettings { get; set; }
+        //public DbSet<TimerSettingsActivity> TimerSettingsActivity { get; set; }
 
         private readonly AuditableEntitySaveChangesInterceptor _auditableEntitySaveChangesInterceptor;
 
-            public ApplicationDbContext(
-                DbContextOptions<ApplicationDbContext> options,
-            AuditableEntitySaveChangesInterceptor auditableEntitySaveChangesInterceptor)
-                : base(options)
-            {
-                _auditableEntitySaveChangesInterceptor = auditableEntitySaveChangesInterceptor;
-            }
+        public ApplicationDbContext(
+            DbContextOptions<ApplicationDbContext> options,
+        AuditableEntitySaveChangesInterceptor auditableEntitySaveChangesInterceptor)
+            : base(options)
+        {
+            _auditableEntitySaveChangesInterceptor = auditableEntitySaveChangesInterceptor;
+        }
 
-            protected override void OnModelCreating(ModelBuilder builder)
-            {
-                builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
             builder.Entity<GmailSettings>().ToTable("GmailSettings", "wsp");
             builder.Entity<Messages>().ToTable("Messages", "wsp");
             builder.Entity<MessagesPreviews>().ToTable("MessagesPreviews", "wsp");
 
-            base.OnModelCreating(builder);
-            }
+            //builder.Entity<TimerSettingsActivity>()
+            //    .HasOne(hijo => hijo.TimerSettings)
+            //    .WithMany(padre => padre.TimerSettingsActivity)
+            //    .HasForeignKey(hijo => hijo.IdTimerSettings);
 
-            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            {
-                optionsBuilder.AddInterceptors(_auditableEntitySaveChangesInterceptor).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-            }
+            base.OnModelCreating(builder);
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.AddInterceptors(_auditableEntitySaveChangesInterceptor).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
         }
     }
+}

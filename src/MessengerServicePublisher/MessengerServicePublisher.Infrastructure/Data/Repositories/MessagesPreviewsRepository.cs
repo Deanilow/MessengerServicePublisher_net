@@ -10,6 +10,6 @@ namespace MessengerServicePublisher.Infrastructure.Data.Repositories
         {
         }
         public async Task<List<MessagesPreviews>> GetMessagesPreviewByDefinition(string definition) =>
-           await _dbContext.MessagesPreviews.Where(x => definition.Contains(x.Definition.Trim())).ToListAsync();
+           await _dbContext.MessagesPreviews.Where(x => definition.Contains(x.Definition.Trim())).OrderBy(x=>x.Id).ToListAsync();
     }
 }

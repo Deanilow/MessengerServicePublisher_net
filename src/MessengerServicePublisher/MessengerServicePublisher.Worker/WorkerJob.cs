@@ -5,13 +5,10 @@ namespace MessengerServicePublisher.Worker
 {
     public class WorkerJob : IRecurringJob
     {
-        private readonly ISettings _appSettings;
-
         private static readonly SemaphoreSlim _taskSemaphore = new SemaphoreSlim(1, 1);
         private readonly IEntryPointGmailService _entryPointService;
         public WorkerJob(ISettings appSettings, IEntryPointGmailService entryPointService)
         {
-            _appSettings = appSettings;
             _entryPointService = entryPointService;
         }
         public async Task RunJobAsync (CancellationToken cancellationToken = default)
@@ -23,7 +20,7 @@ namespace MessengerServicePublisher.Worker
 
             try
             {
-                await _entryPointService.ExecuteAsync();
+                await _entryPointService.ExecuteWorker();
             }
             finally
             {
@@ -31,6 +28,6 @@ namespace MessengerServicePublisher.Worker
             }
         }
 
-        public TimeSpan Interval => TimeSpan.FromSeconds(double.Parse(_appSettings.EverySecond));
+        public TimeSpan Interval => TimeSpan.FromSeconds(6);
     }
 }

@@ -4,7 +4,6 @@ using Google.Apis.Gmail.v1.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using MessengerServicePublisher.Core.Model;
-using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -111,6 +110,7 @@ namespace MessengerServicePublisher.Core.Helper
         /// <param name="ClientSecret">'ClientSecret Name' value created in Gmail API Console.</param>
         public static GmailService GetGmailService(string applicationName, string ClientId, string ClientSecret)
         {
+            //https://myaccount.google.com/connections?filters=3,4&hl=es_419
             _scopes = new List<string>();
             _applicationName = applicationName;
             //_scopes.Add(GmailService.Scope.GmailMetadata);

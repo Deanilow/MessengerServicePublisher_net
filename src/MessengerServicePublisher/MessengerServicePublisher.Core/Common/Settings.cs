@@ -4,10 +4,11 @@ namespace MessengerServicePublisher.Core.Common
 {
     public class Settings : ISettings
     {
-        public string Bd { get; set; }
+        public string GetDataFrom { get; set; }
         public string ClientIdGmail { get; set; }
         public string ClientSecretGmail { get; set; }
         public string NameProyectoGmail { get; set; }
+        public string PermissionGmail { get; set; }
         public string SenderPhone { get; set; }
         public string SenderGmail { get; set; }
         public string Company { get; set; }
@@ -15,6 +16,6 @@ namespace MessengerServicePublisher.Core.Common
         public string HostNameRabbitMQ { get; set; }
         public string UserNameRabbitMQ { get; set; }
         public string PasswordNameRabbitMQ { get; set; }
-        public string EverySecond { get; set; }
+        public string Cycle { get; set; }
     }
 }

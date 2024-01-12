@@ -2,6 +2,7 @@
 {
     public interface IEntryPointGmailService
     {
-        Task ExecuteAsync();
+        Task ExecuteWorker();
+        Task PermissonGmail();
     }
 }
