@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.IdentityModel.Tokens;
 
 namespace MessengerServicePublisher.Infrastructure.Data.Config
 {
@@ -14,7 +15,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Config
 
             return base.SavingChanges(eventData, result);
         }
-
+  
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
             InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
@@ -34,15 +35,18 @@ namespace MessengerServicePublisher.Infrastructure.Data.Config
             {
                 if (entry.State == EntityState.Added)
                 {
-                    entry.Entity.CreatedBy = string.Empty;
+                    entry.Entity.CreatedBy = "ServiceWorker Publisher RabbitMQ";
                     entry.Entity.Created = DateTime.Now;
                 }
 
                 if (entry.State == EntityState.Modified ||
                     entry.HasChangedOwnedEntities())
                 {
-                    entry.Entity.UpdatedBy = string.Empty;
-                    entry.Entity.Udpated = DateTime.Now;
+                    if (entry.Entity.Deleted is null)
+                    {
+                        entry.Entity.UpdatedBy = string.Empty;
+                        entry.Entity.Udpated = DateTime.Now;
+                    }
                 }
             }
         }

@@ -13,7 +13,6 @@ namespace MessengerServicePublisher.Infrastructure.Logger
                 .ConfigureBaseLogging()
                 .CreateLogger();
         }
-
         public static LoggerConfiguration ConfigureBaseLogging(this LoggerConfiguration loggerConfiguration)
         {
             loggerConfiguration

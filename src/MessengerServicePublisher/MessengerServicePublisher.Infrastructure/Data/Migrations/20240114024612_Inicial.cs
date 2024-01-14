@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MessengerServicePublisher.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class inicia : Migration
+    public partial class Inicial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -68,6 +68,7 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    Company = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Definition = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     To = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     From = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
@@ -84,7 +85,6 @@ namespace MessengerServicePublisher.Infrastructure.Data.Migrations
                 {
                     table.PrimaryKey("PK_MessagesPreviews", x => x.Id);
                 });
-
 
             string Definition_Prosegur = string.Empty;
             Definition_Prosegur += $"*PROSEGUR*\n";

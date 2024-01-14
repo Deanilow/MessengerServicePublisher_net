@@ -5,6 +5,7 @@ namespace MessengerServicePublisher.Core.Common
     public class Settings : ISettings
     {
         public string GetDataFrom { get; set; }
+        public string DeleteDataSendBd { get; set; }
         public string ClientIdGmail { get; set; }
         public string ClientSecretGmail { get; set; }
         public string NameProyectoGmail { get; set; }

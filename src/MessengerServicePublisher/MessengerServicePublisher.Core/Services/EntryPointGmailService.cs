@@ -199,8 +199,7 @@ namespace MessengerServicePublisher.Core.Services
                         {
                             data = new MessagesModel()
                             {
-                                to = "51917641085",
-                                //to = item.ToString(),
+                                to = item.ToString(),
                                 from = arrayPhoneSenders[indexDistribution],
                                 messages = new List<MessagesDetailModel>()
                                 {
@@ -214,14 +213,14 @@ namespace MessengerServicePublisher.Core.Services
                         };
 
                         var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
-                            {
-                                To = objData.data.to,
-                                From = objData.data.from,
-                                Company = companySetting,
-                                Definition = DefinitionSetting,
-                                Status = "Pendiente",
-                                MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
-                            }
+                        {
+                            To = objData.data.to,
+                            From = objData.data.from,
+                            Company = companySetting,
+                            Definition = DefinitionSetting,
+                            Status = "Pendiente",
+                            MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
+                        }
                         );
 
                         objData.data.id = objInsertResult.Id;
@@ -328,7 +327,7 @@ namespace MessengerServicePublisher.Core.Services
                  scope.ServiceProvider
                      .GetService<IMessagesPreviewsRepository>();
 
-                var listMessages = await repositoryMessagesPreviews.GetMessagesPreviewByDefinition(DefinitionSetting);
+                var listMessages = await repositoryMessagesPreviews.GetMessagesPreviewByDefinition(companySetting, DefinitionSetting);
 
                 _logger.LogInformation("Se obtuvo " + listMessages.Count() + " mensajes BD bidassoa");
 
@@ -354,7 +353,7 @@ namespace MessengerServicePublisher.Core.Services
                             {
                                 fileUrl = item.FileUrl ?? "",
                                 order = item.Id,
-                                text = item.Text 
+                                text = item.Text
                             };
 
                             listMessagesAdd.Add(data);
@@ -387,7 +386,6 @@ namespace MessengerServicePublisher.Core.Services
                 }
 
 
-
                 ///
                 var listMessagesWithNotSender = listMessages.Where(x => string.IsNullOrEmpty(x.From)).OrderBy(x => x.To).ToList();
 
@@ -412,21 +410,6 @@ namespace MessengerServicePublisher.Core.Services
 
                         listMessagesAdd.Add(objMessagesDetailModel);
                     }
-
-                    //var listMessagesOnlyFileUrl = listMessagesWithNotSender.Where(x => x.To == number && !string.IsNullOrEmpty(x.FileUrl));
-
-                    //foreach (var item in listMessagesOnlyFileUrl)
-                    //{
-                    //    var objMessagesDetailModel = new MessagesDetailModel()
-                    //    {
-                    //        fileUrl = item.FileUrl,
-                    //        text = item.Text,
-                    //        order = item.Id,
-                    //    };
-
-                    //    listMessagesAdd.Add(objMessagesDetailModel);
-                    //}
-
 
                     var objData = new Data()
                     {
@@ -455,6 +438,16 @@ namespace MessengerServicePublisher.Core.Services
 
                     indiceArray = (indiceArray + 1) % arrayPhoneSenders.Count;
                 }
+
+                if (_appSettings.DeleteDataSendBd.Trim().ToUpper() == "TRUE")
+                {
+                    listMessagesWithNotSender.ForEach(e => e.Deleted = DateTime.Now);
+
+                    listMessagesWithSender.ForEach(e => e.Deleted = DateTime.Now);
+
+                    await repositoryMessagesPreviews.DeleteList(listMessagesWithSender);
+                }
+
 
                 return dataListMessage;
             }

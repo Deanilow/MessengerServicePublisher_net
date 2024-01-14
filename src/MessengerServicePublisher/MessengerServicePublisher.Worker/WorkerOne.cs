@@ -14,10 +14,8 @@ namespace MessengerServicePublisher.Worker
         }
         public async Task RunJobAsync(CancellationToken cancellationToken = default)
         {
-
             await _entryPointService.ExecuteWorker();
         }
-
         public DateTime ScheduledTimeUtc => _utcNowAtStartup.AddSeconds(5);
     }
 }

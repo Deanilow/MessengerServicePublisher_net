@@ -11,19 +11,14 @@ public static class ConfigureServices
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services,
         IConfiguration configuration)
     {
-        //services.ConfigureOptions<RabbitMqOptionsSetup>();
-
-
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
                 builder => builder.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
-        services.AddScoped<ApplicationDbContextInitialiser>();
         services.AddScoped<AuditableEntitySaveChangesInterceptor>();
         services.AddScoped<IBaseRepository, BaseRepository>();
         services.AddScoped<IGmailSettingRepository, GmailSettingRepository>();
         services.AddScoped<IMessagesRepository, MessagesRepository>();
         services.AddScoped<IMessagesPreviewsRepository, MessagesPreviewsRepository>();
-        //services.AddScoped<IUnityOfWork, UnityOfWork>();
         return services;
     }
 }

@@ -4,6 +4,7 @@ namespace MessengerServicePublisher.Core.Interfaces
 {
     public interface IMessagesPreviewsRepository : IBaseRepository
     {
-        Task<List<MessagesPreviews>> GetMessagesPreviewByDefinition(string definition);
+        Task<List<MessagesPreviews>> GetMessagesPreviewByDefinition(string company, string definition);
+        Task DeleteList(List<MessagesPreviews> messagesPreviews);
     }
 }

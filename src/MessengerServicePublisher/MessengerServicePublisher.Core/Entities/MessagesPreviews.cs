@@ -8,6 +8,7 @@ namespace MessengerServicePublisher.Core.Entities
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
+        public string Company { get; set; }
         public string Definition { get; set; }
         public string To { get; set; }
         public string From { get; set; }

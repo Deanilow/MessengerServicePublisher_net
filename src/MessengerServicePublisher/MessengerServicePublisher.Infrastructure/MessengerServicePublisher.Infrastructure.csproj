@@ -7,6 +7,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Data\Config\TimerSettingsActivityConfiguration.cs" />
+	  <Compile Remove="Data\Config\TimerSettingsConfiguration.cs" />
 	  <Compile Remove="Logger\LoggerAdapter.cs" />
 	</ItemGroup>
 
@@ -20,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

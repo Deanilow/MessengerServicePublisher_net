@@ -29,7 +29,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
         services.AddInfrastructureServices(hostContext.Configuration);
         services.AddMemoryCache();
-
+        //services.AddSingleton<TimerChangeWorker>();
         var Configuration = hostContext.Configuration;
 
         var applicationSettings = Configuration.GetSection("AppSettings").Get<Settings>();
@@ -54,12 +54,28 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .Build();
 
-try
+using (var scope = host.Services.CreateScope())
 {
-    await host.RunAsync();
-}
-catch (Exception exception)
-{
-    var logger = host.Services.GetService<ILogger<Program>>();
-    logger.LogInformation($"{exception}");
+    var serviceProvider = scope.ServiceProvider;
+
+    try
+    {
+        // Ejecutar el TimerChangeWorker
+        //var timerChangeWorker = serviceProvider.GetRequiredService<TimerChangeWorker>();
+        //await timerChangeWorker.StartAsync(CancellationToken.None);
+
+        // Ejecutar la aplicación
+        await host.RunAsync();
+    }
+    catch (Exception exception)
+    {
+        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation($"{exception}");
+    }
+    finally
+    {
+        // Detener el TimerChangeWorker al finalizar
+        //var timerChangeWorker = serviceProvider.GetRequiredService<TimerChangeWorker>();
+        //await timerChangeWorker.StopAsync(CancellationToken.None);
+    }
 }

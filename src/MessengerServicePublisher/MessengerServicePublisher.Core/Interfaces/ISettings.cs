@@ -3,6 +3,7 @@
     public interface ISettings
     {
         string GetDataFrom { get; set; }
+        string DeleteDataSendBd { get; set; }
         string ClientIdGmail { get; set; }
         string ClientSecretGmail { get; set; }
         string NameProyectoGmail { get; set; }
