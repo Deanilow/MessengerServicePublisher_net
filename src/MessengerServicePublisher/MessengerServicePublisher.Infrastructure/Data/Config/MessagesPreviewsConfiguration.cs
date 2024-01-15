@@ -12,10 +12,12 @@ namespace MessengerServicePublisher.Infrastructure.Data.Config
 
             builder.ToTable("MessagesPreviews");
             builder.Property(entity => entity.Id).ValueGeneratedOnAdd();
+            builder.Property(entity => entity.Company).HasMaxLength(100).IsRequired();
+            builder.Property(entity => entity.Definition).HasMaxLength(1000).IsRequired();
             builder.Property(entity => entity.To).HasMaxLength(20).IsRequired();
             builder.Property(entity => entity.From).HasMaxLength(20).IsRequired(false);
             builder.Property(entity => entity.Text).HasMaxLength(int.MaxValue).IsRequired();
-            builder.Property(entity => entity.FileUrl).HasMaxLength(int.MaxValue).IsRequired(false);
+            builder.Property(entity => entity.FileUrl).HasMaxLength(1000).IsRequired(false);
         }
     }
 }

@@ -24,10 +24,6 @@ var host = Host.CreateDefaultBuilder(args)
      {
          LoggerConfigurationExtensions.SetupLoggerConfiguration(hostContext);
      })
-     .UseWindowsService(config =>
-     {
-         
-     })
     .UseSerilog()
     .ConfigureHostConfiguration(configureHost =>
     {

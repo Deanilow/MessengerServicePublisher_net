@@ -10,8 +10,8 @@ namespace MessengerServicePublisher.Infrastructure.Data.Repositories
         {
         }
         public async Task<List<MessagesPreviews>> GetMessagesPreviewByDefinition(string company, string definition) =>
-           await _dbContext.MessagesPreviews.Where(x => company.Contains(x.Company  .Trim()) && definition.Contains(x.Definition.Trim())).OrderBy(x=>x.Id).ToListAsync();
-        public async Task DeleteList(List<MessagesPreviews> messagesPreviews) 
+           await _dbContext.MessagesPreviews.Where(x => company.Contains(x.Company.Trim()) && definition.Contains(x.Definition.Trim())).OrderBy(x => x.Id).ToListAsync();
+        public async Task DeleteList(List<MessagesPreviews> messagesPreviews)
         {
             _dbContext.AttachRange(messagesPreviews);
 

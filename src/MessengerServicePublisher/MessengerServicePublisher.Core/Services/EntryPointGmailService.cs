@@ -448,7 +448,6 @@ namespace MessengerServicePublisher.Core.Services
                     await repositoryMessagesPreviews.DeleteList(listMessagesWithSender);
                 }
 
-
                 return dataListMessage;
             }
             catch (Exception ex)
