@@ -4,12 +4,22 @@ REM Obtener la ruta del script actual
 set "scriptPath=%~dp0"
 
 REM Construir la ruta del archivo JSON de configuración
-set "jsonFilePath=%scriptPath%appsettings.Development.json"
+set "jsonFilePath=%scriptPath%appsettings.Production.json"
 
 REM Leer el valor de "NameService" del archivo JSON y limpiar espacios en blanco
 for /f "tokens=2 delims=:," %%a in ('type "%jsonFilePath%" ^| find /i "NameService"') do set "name=%%~a"
 set "name=%name:"=%"
 set "name=%name: =%"
+
+REM Verificar si el servicio está actualmente en ejecución
+pm2 show "%name%" >nul 2>nul
+set "serviceRunning=%errorlevel%"
+
+REM Detener y eliminar el servicio si está en ejecución
+if %serviceRunning% equ 0 (
+  pm2 stop "%name%"
+  pm2 delete "%name%"
+)
 
 REM Verificar si el archivo JSON a crear existe y eliminarlo si es el caso
 if exist "%scriptPath%%name%.json" (

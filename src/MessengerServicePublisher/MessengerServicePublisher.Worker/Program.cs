@@ -11,12 +11,16 @@ using Serilog;
 using LoggerConfigurationExtensions =
     MessengerServicePublisher.Infrastructure.Logger.LoggerConfigurationExtensions;
 
-Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Development");
+Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Production");
 
 var host = Host.CreateDefaultBuilder(args)
      .ConfigureLogging((hostContext, services) =>
      {
          LoggerConfigurationExtensions.SetupLoggerConfiguration(hostContext);
+     })
+     .UseWindowsService(config =>
+     {
+         
      })
     .UseSerilog()
     .ConfigureHostConfiguration(configureHost =>
@@ -25,6 +29,10 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((hostContext, services) =>
     {
+        services.AddWindowsService(options =>
+        {
+            options.ServiceName = ".NET Joke Service";
+        });
         services.AddSingleton<IEntryPointGmailService, EntryPointGmailService>();
         services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
         services.AddInfrastructureServices(hostContext.Configuration);

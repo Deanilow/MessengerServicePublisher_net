@@ -7,7 +7,7 @@ namespace MessengerServicePublisher.Worker
     {
         private static readonly SemaphoreSlim _taskSemaphore = new SemaphoreSlim(1, 1);
         private readonly IEntryPointGmailService _entryPointService;
-        public WorkerJob(ISettings appSettings, IEntryPointGmailService entryPointService)
+        public WorkerJob(IEntryPointGmailService entryPointService)
         {
             _entryPointService = entryPointService;
         }
