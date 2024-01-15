@@ -3,23 +3,28 @@
 REM Obtener la ruta del script actual
 set "scriptPath=%~dp0"
 
+REM Construir la ruta del archivo JSON de configuración basado en el entorno
+set "appsettingsFile=%scriptPath%appsettings.json"
+set "environment="
+
+REM Leer el valor de "ENVIRONMENT" del archivo appsettings.json
+for /f "tokens=2 delims=:," %%a in ('type "%appsettingsFile%" ^| find /i "ENVIRONMENT"') do set "environment=%%~a"
+set "environment=%environment:"=%"
+set "environment=%environment: =%"
+
+REM Validar que se haya leído el entorno
+if "%environment%"=="" (
+  echo No se pudo determinar el entorno desde appsettings.json.
+  exit /b 1
+)
+
 REM Construir la ruta del archivo JSON de configuración
-set "jsonFilePath=%scriptPath%appsettings.Production.json"
+set "jsonFilePath=%scriptPath%appsettings.%environment%.json"
 
 REM Leer el valor de "NameService" del archivo JSON y limpiar espacios en blanco
 for /f "tokens=2 delims=:," %%a in ('type "%jsonFilePath%" ^| find /i "NameService"') do set "name=%%~a"
 set "name=%name:"=%"
 set "name=%name: =%"
-
-REM Verificar si el servicio está actualmente en ejecución
-pm2 show "%name%" >nul 2>nul
-set "serviceRunning=%errorlevel%"
-
-REM Detener y eliminar el servicio si está en ejecución
-if %serviceRunning% equ 0 (
-  pm2 stop "%name%"
-  pm2 delete "%name%"
-)
 
 REM Verificar si el archivo JSON a crear existe y eliminarlo si es el caso
 if exist "%scriptPath%%name%.json" (
@@ -48,7 +53,7 @@ REM Contenido del JSON
   echo       "script": "%executablePath%",
   echo       "cwd": "%cwd%",
   echo       "max_memory_restart": "2G",
-  echo       "log_date_formato": "MM-DD--YYYY HH:mm Z",
+  echo       "log_date_format": "MM-DD--YYYY HH:mm Z",
   echo       "max_restarts": 5,
   echo       "autorestart": true
   echo     }

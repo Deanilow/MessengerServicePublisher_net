@@ -11,7 +11,13 @@ using Serilog;
 using LoggerConfigurationExtensions =
     MessengerServicePublisher.Infrastructure.Logger.LoggerConfigurationExtensions;
 
-Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Production");
+var configuration = new ConfigurationBuilder()
+           .AddJsonFile("appsettings.json", true, true)
+           .Build();
+
+var dotnetEnvironment = configuration["ENVIRONMENT"];
+
+Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", dotnetEnvironment ?? "Production");
 
 var host = Host.CreateDefaultBuilder(args)
      .ConfigureLogging((hostContext, services) =>
