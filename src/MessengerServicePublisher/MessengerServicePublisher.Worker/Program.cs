@@ -17,7 +17,7 @@ var configuration = new ConfigurationBuilder()
 
 var dotnetEnvironment = configuration["ENVIRONMENT"];
 
-Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", dotnetEnvironment ?? "Production");
+Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", dotnetEnvironment ?? "Development");
 
 var host = Host.CreateDefaultBuilder(args)
      .ConfigureLogging((hostContext, services) =>
@@ -31,10 +31,6 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((hostContext, services) =>
     {
-        services.AddWindowsService(options =>
-        {
-            options.ServiceName = ".NET Joke Service";
-        });
         services.AddSingleton<IEntryPointGmailService, EntryPointGmailService>();
         services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
         services.AddInfrastructureServices(hostContext.Configuration);

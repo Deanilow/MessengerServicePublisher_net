@@ -18,6 +18,5 @@ namespace MessengerServicePublisher.Worker
         }
 
         public DateTime ScheduledTimeUtc => _utcNowAtStartup.AddSeconds(5);
-
     }
 }

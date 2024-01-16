@@ -40,11 +40,11 @@ namespace MessengerServicePublisher.Core.Services
                     try
                     {
                         var mailsGmail = service.GetMessages(query: $"from:{_appSettings.SenderGmail}", markRead: false, filterDefinitionTextBody: _appSettings.Definition);
-
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-
+                        _logger.LogInformation($"Next PermissonGmail {DateTime.Now.ToString("HH:mm:ss tt")}");
+                        _logger.LogInformation($"PermissonGmail " + ex.Message.ToString());
                     }
                 }
 
@@ -74,41 +74,14 @@ namespace MessengerServicePublisher.Core.Services
                 switch (companySetting)
                 {
                     case Constans.COMANY_PROSEGUR:
-                        if (GetDataFrom == Constans.GMAIL) listMessages = await GetMessagesImboxProsegurGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
+                        if (GetDataFrom == Constans.GMAIL)  await GetMessagesImboxProsegurGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
                         break;
                     case Constans.COMANY_BIDASSOA:
                         //if (GetDataFrom == Constans.GMAIL) listMessages = await GetMessagesImboxBidassoaGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
-                        if (GetDataFrom == Constans.BD) listMessages = await GetMessagesBidassoaBd(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
+                        if (GetDataFrom == Constans.BD) await GetMessagesBidassoaBd(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
                         break;
                     default:
                         break;
-                }
-
-                if (listMessages != null && listMessages.Count > 0)
-                {
-                    for (int i = 0; i < listMessages.Count; i++)
-                    {
-                        var Queue = $"{Constans.RABBITMQ_QUEUE}{listMessages[i].data.from}";
-
-                        _logger.LogInformation($"Se Envia por RabbitMQ  a Queue : {Queue} y json : {System.Text.Json.JsonSerializer.Serialize(listMessages[i])}");
-
-                        var factory = new ConnectionFactory()
-                        {
-                            HostName = _appSettings.HostNameRabbitMQ,
-                            UserName = _appSettings.UserNameRabbitMQ,
-                            Password = _appSettings.PasswordNameRabbitMQ
-                        };
-                        using (var connection = factory.CreateConnection())
-                        using (var channel = connection.CreateModel())
-                        {
-                            channel.QueueDeclare(queue: Queue, durable: true, exclusive: false, autoDelete: false, arguments: new Dictionary<string, object> { { "x-queue-type", "quorum" } });
-
-                            var stringContent = JsonConvert.SerializeObject(listMessages[i]);
-                            var body = Encoding.UTF8.GetBytes(stringContent);
-
-                            channel.BasicPublish(exchange: "", routingKey: Queue, basicProperties: null, body: body);
-                        }
-                    }
                 }
 
                 _logger.LogInformation("FIN ExecuteWorker");
@@ -118,7 +91,37 @@ namespace MessengerServicePublisher.Core.Services
                 _logger.LogInformation("EXCEPTION EntryPointGmailService " + ex.Message.ToString());
             }
         }
-        private async Task<List<Data>> GetMessagesImboxProsegurGmail(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
+        private void SendConsumerRabbitMQ(Data objRequest)
+        {
+            try
+            {
+                var Queue = $"{Constans.RABBITMQ_QUEUE}{objRequest.data.from}";
+
+                _logger.LogInformation($"Se Envia por RabbitMQ  a Queue : {Queue} y json : {System.Text.Json.JsonSerializer.Serialize(objRequest)}");
+
+                var factory = new ConnectionFactory()
+                {
+                    HostName = _appSettings.HostNameRabbitMQ,
+                    UserName = _appSettings.UserNameRabbitMQ,
+                    Password = _appSettings.PasswordNameRabbitMQ
+                };
+                using (var connection = factory.CreateConnection())
+                using (var channel = connection.CreateModel())
+                {
+                    channel.QueueDeclare(queue: Queue, durable: true, exclusive: false, autoDelete: false, arguments: new Dictionary<string, object> { { "x-queue-type", "quorum" } });
+
+                    var stringContent = JsonConvert.SerializeObject(objRequest);
+                    var body = Encoding.UTF8.GetBytes(stringContent);
+
+                    channel.BasicPublish(exchange: "", routingKey: Queue, basicProperties: null, body: body);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("EXCEPTION SendConsumerRabbitMQ " + ex.Message.ToString());
+            }
+        }
+        private async Task GetMessagesImboxProsegurGmail(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
         {
             try
             {
@@ -224,19 +227,15 @@ namespace MessengerServicePublisher.Core.Services
                         );
 
                         objData.data.id = objInsertResult.Id;
-
-                        dataListMessage.Add(objData);
+                        SendConsumerRabbitMQ(objData);
                     }
                     //Destribuye a los telefonos asignado en SenderPhoneSetting
                     indexDistribution = (indexDistribution + 1) % arrayPhoneSenders.Count;
                 }
-
-                return dataListMessage;
             }
             catch (Exception ex)
             {
                 _logger.LogInformation("Error en GetMessagesImbox : " + ex.Message.ToString());
-                return (List<Data>)Enumerable.Empty<Data>();
             }
         }
         private async Task<List<Data>> GetMessagesImboxBidassoaGmail(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
@@ -309,12 +308,10 @@ namespace MessengerServicePublisher.Core.Services
                 return (List<Data>)Enumerable.Empty<Data>();
             }
         }
-        private async Task<List<Data>> GetMessagesBidassoaBd(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
+        private async Task GetMessagesBidassoaBd(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
         {
             try
-            {
-                List<Data> dataListMessage = new();
-
+            { 
                 List<string> arrayPhoneSenders = SenderPhoneSetting.Split(';').ToList();
 
                 using var scope = _serviceScopeFactoryLocator.CreateScope();
@@ -381,12 +378,10 @@ namespace MessengerServicePublisher.Core.Services
 
                         objData.data.id = objInsertResult.Id;
 
-                        dataListMessage.Add(objData);
+                        SendConsumerRabbitMQ(objData);
                     }
                 }
 
-
-                ///
                 var listMessagesWithNotSender = listMessages.Where(x => string.IsNullOrEmpty(x.From)).OrderBy(x => x.To).ToList();
 
                 var distictToNumberMessagesNotSender = listMessagesWithNotSender.DistinctBy(x => x.To).Select(x => x.To).ToList();
@@ -434,7 +429,7 @@ namespace MessengerServicePublisher.Core.Services
 
                     objData.data.id = objInsertResult.Id;
 
-                    dataListMessage.Add(objData);
+                    SendConsumerRabbitMQ(objData);
 
                     indiceArray = (indiceArray + 1) % arrayPhoneSenders.Count;
                 }
@@ -447,13 +442,10 @@ namespace MessengerServicePublisher.Core.Services
 
                     await repositoryMessagesPreviews.DeleteList(listMessagesWithSender);
                 }
-
-                return dataListMessage;
             }
             catch (Exception ex)
             {
                 _logger.LogInformation("Error en GetMessagesImbox : " + ex.Message.ToString());
-                return (List<Data>)Enumerable.Empty<Data>();
             }
         }
         private static string ProcessMessageType2(string input)

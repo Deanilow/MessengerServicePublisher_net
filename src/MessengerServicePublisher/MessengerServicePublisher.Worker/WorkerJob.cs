@@ -27,7 +27,6 @@ namespace MessengerServicePublisher.Worker
                 _taskSemaphore.Release();
             }
         }
-
         public TimeSpan Interval => TimeSpan.FromSeconds(6);
     }
 }
