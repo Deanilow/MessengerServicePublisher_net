@@ -217,7 +217,9 @@ namespace MessengerServicePublisher.Core.Helper
             List<Message> result = new List<Message>();
             List<MessageGmail> messages = new List<MessageGmail>();
             UsersResource.MessagesResource.ListRequest request = service.Users.Messages.List(userId);
-            request.Q = query;
+            var emails = query.Split(';').Select(e => $"from:{e.Trim()}");
+            var newQuery = string.Join(" OR ", emails);
+            request.Q = $"{newQuery} is:unread";
             do
             {
                 ListMessagesResponse response = request.Execute();

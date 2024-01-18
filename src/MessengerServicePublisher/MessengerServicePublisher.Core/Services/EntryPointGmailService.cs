@@ -39,7 +39,7 @@ namespace MessengerServicePublisher.Core.Services
 
                     try
                     {
-                        var mailsGmail = service.GetMessages(query: $"from:{_appSettings.SenderGmail}", markRead: false, filterDefinitionTextBody: _appSettings.Definition);
+                        var mailsGmail = service.GetMessages(query: $"{_appSettings.SenderGmail}", markRead: false, filterDefinitionTextBody: _appSettings.Definition);
                     }
                     catch (Exception ex)
                     {
@@ -131,7 +131,7 @@ namespace MessengerServicePublisher.Core.Services
 
                 var service = GmailHelper.GetGmailService(applicationName: _appSettings.NameProyectoGmail, ClientId: _appSettings.ClientIdGmail, ClientSecret: _appSettings.ClientSecretGmail);
 
-                var mailsGmail = service.GetMessages(query: $"from:{_appSettings.SenderGmail} is:unread", markRead: false, filterDefinitionTextBody: DefinitionSetting);
+                var mailsGmail = service.GetMessages(query: $"{_appSettings.SenderGmail}", markRead: true, filterDefinitionTextBody: DefinitionSetting);
 
                 _logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
 
