@@ -16,5 +16,6 @@
         string UserNameRabbitMQ { get; set; }
         string PasswordNameRabbitMQ { get; set; }
         string Cycle { get; set; }
+        string SecondsWaitingAfterSendRabbitMQ { get; set; }
     }
 }

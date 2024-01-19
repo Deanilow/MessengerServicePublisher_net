@@ -18,5 +18,7 @@ namespace MessengerServicePublisher.Core.Common
         public string UserNameRabbitMQ { get; set; }
         public string PasswordNameRabbitMQ { get; set; }
         public string Cycle { get; set; }
+        public string SecondsWaitingAfterSendRabbitMQ { get; set; }
+
     }
 }

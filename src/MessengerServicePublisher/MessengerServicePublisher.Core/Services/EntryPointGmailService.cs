@@ -91,13 +91,13 @@ namespace MessengerServicePublisher.Core.Services
                 _logger.LogInformation("EXCEPTION EntryPointGmailService " + ex.Message.ToString());
             }
         }
-        private void SendConsumerRabbitMQ(Data objRequest)
+        private async Task SendConsumerRabbitMQ(Data objRequest)
         {
             try
             {
                 var Queue = $"{Constans.RABBITMQ_QUEUE}{objRequest.data.from}";
 
-                _logger.LogInformation($"Se Envia por RabbitMQ  a Queue : {Queue} y json : {System.Text.Json.JsonSerializer.Serialize(objRequest)}");
+                _logger.LogInformation($"Se Envia por RabbitMQ  a Queue : {Queue} del id : {objRequest.data.id}");
 
                 var factory = new ConnectionFactory()
                 {
@@ -115,6 +115,7 @@ namespace MessengerServicePublisher.Core.Services
 
                     channel.BasicPublish(exchange: "", routingKey: Queue, basicProperties: null, body: body);
                 }
+                await Task.Delay(1000 * int.Parse(_appSettings.SecondsWaitingAfterSendRabbitMQ));
             }
             catch (Exception ex)
             {
@@ -141,7 +142,7 @@ namespace MessengerServicePublisher.Core.Services
                 {
                     var subject = FilterNumberText(objMessageGmail.subject);
 
-                    var variablesBodyGmail = objMessageGmail.body.Split(';');
+                    var variablesBodyGmail = objMessageGmail.body.Trim().Split(';');
 
                     var objArrayVariablesGmail = new object[variablesBodyGmail.Length];
 
@@ -176,13 +177,15 @@ namespace MessengerServicePublisher.Core.Services
 
                     var objGmailSetting = cacheDataGmailSetting.FirstOrDefault(x => x.Definition.ToUpper() == variable1Gmail);
 
+                    var text = objGmailSetting.Description;
+
                     foreach (var itemVariableGmail in objArrayVariablesGmail)
                     {
                         string variable = itemVariableGmail.GetType().GetProperty("Variable")?.GetValue(itemVariableGmail)?.ToString() ?? "";
 
                         string value = itemVariableGmail.GetType().GetProperty("Value")?.GetValue(itemVariableGmail)?.ToString() ?? "";
 
-                        objGmailSetting.Description = objGmailSetting.Description.Replace(variable, value);
+                        text = text.Replace(variable, value);
                     }
 
                     switch (objGmailSetting.Type)
@@ -190,7 +193,7 @@ namespace MessengerServicePublisher.Core.Services
                         case 1:
                             break;
                         case 2:
-                            objGmailSetting.Description = ProcessMessageType2(objGmailSetting.Description);
+                            text = ProcessMessageType2(text);
                             break;
                         default:
                             break;
@@ -208,7 +211,7 @@ namespace MessengerServicePublisher.Core.Services
                                 {
                                         new MessagesDetailModel()
                                         {
-                                        text = objGmailSetting.Description,
+                                        text = text,
                                         fileUrl = "",
                                      }
                                 }
@@ -220,16 +223,17 @@ namespace MessengerServicePublisher.Core.Services
                             To = objData.data.to,
                             From = objData.data.from,
                             Company = companySetting,
-                            Definition = DefinitionSetting,
+                            Definition = variable1Gmail,
                             Status = "Pendiente",
                             MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
                         }
                         );
 
                         objData.data.id = objInsertResult.Id;
-                        SendConsumerRabbitMQ(objData);
+
+                        await SendConsumerRabbitMQ(objData);
                     }
-                    //Destribuye a los telefonos asignado en SenderPhoneSetting
+                    //Destribuye a los telefonos asignado en SenderPhoneSetting--
                     indexDistribution = (indexDistribution + 1) % arrayPhoneSenders.Count;
                 }
             }
@@ -378,7 +382,7 @@ namespace MessengerServicePublisher.Core.Services
 
                         objData.data.id = objInsertResult.Id;
 
-                        SendConsumerRabbitMQ(objData);
+                        await SendConsumerRabbitMQ(objData);
                     }
                 }
 
@@ -429,7 +433,7 @@ namespace MessengerServicePublisher.Core.Services
 
                     objData.data.id = objInsertResult.Id;
 
-                    SendConsumerRabbitMQ(objData);
+                    await SendConsumerRabbitMQ(objData);
 
                     indiceArray = (indiceArray + 1) % arrayPhoneSenders.Count;
                 }
