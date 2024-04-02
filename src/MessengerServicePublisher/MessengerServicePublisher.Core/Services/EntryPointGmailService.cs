@@ -75,6 +75,7 @@ namespace MessengerServicePublisher.Core.Services
                 {
                     case Constans.COMANY_PROSEGUR:
                         if (GetDataFrom == Constans.GMAIL)  await GetMessagesImboxProsegurGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
+                        if (GetDataFrom == Constans.BD) await GetMessagesProsegurBd(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
                         break;
                     case Constans.COMANY_BIDASSOA:
                         //if (GetDataFrom == Constans.GMAIL) listMessages = await GetMessagesImboxBidassoaGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
@@ -132,7 +133,7 @@ namespace MessengerServicePublisher.Core.Services
 
                 var service = GmailHelper.GetGmailService(applicationName: _appSettings.NameProyectoGmail, ClientId: _appSettings.ClientIdGmail, ClientSecret: _appSettings.ClientSecretGmail);
 
-                var mailsGmail = service.GetMessages(query: $"{_appSettings.SenderGmail}", markRead: true, filterDefinitionTextBody: DefinitionSetting);
+                var mailsGmail = service.GetMessages(query: $"{_appSettings.SenderGmail}", markRead: false, filterDefinitionTextBody: DefinitionSetting);
 
                 _logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
 
@@ -199,39 +200,42 @@ namespace MessengerServicePublisher.Core.Services
                             break;
                     }
 
-                    foreach (var item in subject.Split(';'))
+                    foreach (var toNumber in subject.Split(';'))
                     {
-                        var objData = new Data()
+                        if (!string.IsNullOrWhiteSpace(toNumber.Trim()))
                         {
-                            data = new MessagesModel()
+                            var objData = new Data()
                             {
-                                to = item.ToString(),
-                                from = arrayPhoneSenders[indexDistribution],
-                                messages = new List<MessagesDetailModel>()
+                                data = new MessagesModel()
                                 {
-                                        new MessagesDetailModel()
-                                        {
-                                        text = text,
-                                        fileUrl = "",
-                                     }
+                                    to = toNumber.ToString(),
+                                    from = arrayPhoneSenders[indexDistribution],
+                                    messages = new List<MessagesDetailModel>()
+                                    {
+                                            new MessagesDetailModel()
+                                            {
+                                            text = text,
+                                            fileUrl = "",
+                                         }
+                                    }
                                 }
+                            };
+
+                            var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
+                            {
+                                To = objData.data.to,
+                                From = objData.data.from,
+                                Company = companySetting,
+                                Definition = variable1Gmail,
+                                Status = "Pendiente",
+                                MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
                             }
-                        };
+                            );
 
-                        var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
-                        {
-                            To = objData.data.to,
-                            From = objData.data.from,
-                            Company = companySetting,
-                            Definition = variable1Gmail,
-                            Status = "Pendiente",
-                            MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
+                            objData.data.id = objInsertResult.Id;
+
+                            await SendConsumerRabbitMQ(objData);
                         }
-                        );
-
-                        objData.data.id = objInsertResult.Id;
-
-                        await SendConsumerRabbitMQ(objData);
                     }
                     //Destribuye a los telefonos asignado en SenderPhoneSetting--
                     indexDistribution = (indexDistribution + 1) % arrayPhoneSenders.Count;
@@ -242,44 +246,120 @@ namespace MessengerServicePublisher.Core.Services
                 _logger.LogInformation("Error en GetMessagesImbox : " + ex.Message.ToString());
             }
         }
-        private async Task<List<Data>> GetMessagesImboxBidassoaGmail(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
+        private async Task GetMessagesProsegurBd(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
         {
             try
-            {
-                List<Data> dataListMessage = new();
+            { 
+                List<string> arrayPhoneSenders = SenderPhoneSetting.Split(';').ToList();
 
-                var service = GmailHelper.GetGmailService(applicationName: _appSettings.NameProyectoGmail, ClientId: _appSettings.ClientIdGmail, ClientSecret: _appSettings.ClientSecretGmail);
+                using var scope = _serviceScopeFactoryLocator.CreateScope();
 
-                var mailsGmail = service.GetMessages(query: $"from:{_appSettings.SenderGmail} is:unread", markRead: true, filterDefinitionTextBody: DefinitionSetting);
+                var repositoryMessages =
+                      scope.ServiceProvider
+                          .GetService<IMessagesRepository>();
 
-                _logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
+                var repositoryMessagesPreviews =
+                 scope.ServiceProvider
+                     .GetService<IMessagesPreviewsRepository>();
 
-                foreach (var objMessageGmail in mailsGmail)
+                var listMessages = await repositoryMessagesPreviews.GetMessagesPreviewByDefinition(companySetting, DefinitionSetting);
+
+                _logger.LogInformation("Se obtuvo " + listMessages.Count() + " mensajes BD prosegur");
+
+                var listMessagesWithSender = listMessages.Where(x => !string.IsNullOrEmpty(x.From)).ToList();
+
+                var distictFromNumberMessageSender = listMessagesWithSender.DistinctBy(x => x.From).Select(x => x.From).ToList();
+
+                foreach (var fromNumber in distictFromNumberMessageSender)
                 {
-                    using var scope = _serviceScopeFactoryLocator.CreateScope();
+                    var listMessagesFilter = listMessagesWithSender.Where(x => x.From == fromNumber);
 
-                    var repositoryMessages =
-                       scope.ServiceProvider
-                           .GetService<IMessagesRepository>();
+                    var distictTolistMessagestFilter = listMessagesFilter.DistinctBy(x => x.To).Select(x => x.To).ToList();
 
-
-                    foreach (var item in objMessageGmail.subject.Split(';'))
+                    foreach (var toNumber in distictTolistMessagestFilter)
                     {
+                        var newToNumber = FilterNumberText(toNumber);
+
+                        if (!string.IsNullOrWhiteSpace(toNumber.Trim()))
+                        {
+                            var listMessagesOnlyTextFiter = listMessagesWithSender.Where(x => x.From == fromNumber && x.To == newToNumber);
+
+                            List<MessagesDetailModel> listMessagesAdd = new List<MessagesDetailModel>();
+
+                            foreach (var item in listMessagesOnlyTextFiter)
+                            {
+                                var data = new MessagesDetailModel()
+                                {
+                                    fileUrl = item.FileUrl ?? "",
+                                    order = item.Id,
+                                    text = item.Text
+                                };
+
+                                listMessagesAdd.Add(data);
+                            }
+
+                            var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
+                            {
+                                To = newToNumber,
+                                From = fromNumber,
+                                Company = companySetting,
+                                Definition = DefinitionSetting,
+                                Status = "Pendiente",
+                                MessagesDetail = JsonConvert.SerializeObject(listMessagesAdd)
+                            });
+
+                            var objData = new Data()
+                            {
+                                data = new MessagesModel()
+                                {
+                                    to = newToNumber,
+                                    from = fromNumber,
+                                    messages = listMessagesAdd.OrderBy(x => x.order).ToList()
+                                }
+                            };
+
+                            objData.data.id = objInsertResult.Id;
+
+                            await SendConsumerRabbitMQ(objData);
+                        }
+                    }
+                }
+
+                var listMessagesWithNotSender = listMessages.Where(x => string.IsNullOrEmpty(x.From)).OrderBy(x => x.To).ToList();
+
+                var distictToNumberMessagesNotSender = listMessagesWithNotSender.DistinctBy(x => x.To).Select(x => x.To).ToList();
+
+                int indiceArray = 0;
+
+                foreach (var toNumber in distictToNumberMessagesNotSender)
+                {
+                    var newToNumber = FilterNumberText(toNumber);
+
+                    if (!string.IsNullOrWhiteSpace(newToNumber.Trim()))
+                    {
+                        List<MessagesDetailModel> listMessagesAdd = new List<MessagesDetailModel>();
+
+                        var listMessagesNotSenderFilter = listMessagesWithNotSender.Where(x => x.To == newToNumber);
+
+                        foreach (var item in listMessagesNotSenderFilter)
+                        {
+                            var objMessagesDetailModel = new MessagesDetailModel()
+                            {
+                                fileUrl = item.FileUrl,
+                                text = item.Text,
+                                order = item.Id,
+                            };
+
+                            listMessagesAdd.Add(objMessagesDetailModel);
+                        }
+
                         var objData = new Data()
                         {
                             data = new MessagesModel()
                             {
-                                //to = "51900262844",
-                                to = item.ToString(),
-                                from = string.Empty,
-                                messages = new List<MessagesDetailModel>() {
-                                        new MessagesDetailModel()
-                                        {
-                                        text = objMessageGmail.body,
-                                        fileUrl = "",
-                                        order = 1
-                                     }
-                                 }
+                                to = newToNumber,
+                                from = arrayPhoneSenders[indiceArray],
+                                messages = listMessagesAdd.OrderBy(x => x.order).ToList()
                             }
                         };
 
@@ -296,26 +376,30 @@ namespace MessengerServicePublisher.Core.Services
 
                         objData.data.id = objInsertResult.Id;
 
-                        dataListMessage.Add(objData);
-                    }
+                        await SendConsumerRabbitMQ(objData);
+
+                        indiceArray = (indiceArray + 1) % arrayPhoneSenders.Count;
+                    }   
                 }
 
-                //var cantSenders = SenderPhoneSetting.Split(';');
+                if (_appSettings.DeleteDataSendBd.Trim().ToUpper() == "TRUE")
+                {
+                    listMessagesWithNotSender.ForEach(e => e.Deleted = DateTime.Now);
 
-                //if (cantSenders.Count() > 0) dataListMessage = DistribuirListado(dataListMessage, SenderPhoneSetting.Split(';'));
+                    listMessagesWithSender.ForEach(e => e.Deleted = DateTime.Now);
 
-                return dataListMessage;
+                    await repositoryMessagesPreviews.DeleteList(listMessagesWithSender);
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogInformation("Error en GetMessagesImbox : " + ex.Message.ToString());
-                return (List<Data>)Enumerable.Empty<Data>();
             }
         }
         private async Task GetMessagesBidassoaBd(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
         {
             try
-            { 
+            {
                 List<string> arrayPhoneSenders = SenderPhoneSetting.Split(';').ToList();
 
                 using var scope = _serviceScopeFactoryLocator.CreateScope();
@@ -344,45 +428,50 @@ namespace MessengerServicePublisher.Core.Services
 
                     foreach (var toNumber in distictTolistMessagestFilter)
                     {
-                        var listMessagesOnlyTextFiter = listMessagesWithSender.Where(x => x.From == fromNumber && x.To == toNumber);
+                        var newToNumber = FilterNumberText(toNumber);
 
-                        List<MessagesDetailModel> listMessagesAdd = new List<MessagesDetailModel>();
-
-                        foreach (var item in listMessagesOnlyTextFiter)
+                        if (!string.IsNullOrWhiteSpace(toNumber.Trim()))
                         {
-                            var data = new MessagesDetailModel()
+                            var listMessagesOnlyTextFiter = listMessagesWithSender.Where(x => x.From == fromNumber && x.To == newToNumber);
+
+                            List<MessagesDetailModel> listMessagesAdd = new List<MessagesDetailModel>();
+
+                            foreach (var item in listMessagesOnlyTextFiter)
                             {
-                                fileUrl = item.FileUrl ?? "",
-                                order = item.Id,
-                                text = item.Text
+                                var data = new MessagesDetailModel()
+                                {
+                                    fileUrl = item.FileUrl ?? "",
+                                    order = item.Id,
+                                    text = item.Text
+                                };
+
+                                listMessagesAdd.Add(data);
+                            }
+
+                            var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
+                            {
+                                To = newToNumber,
+                                From = fromNumber,
+                                Company = companySetting,
+                                Definition = DefinitionSetting,
+                                Status = "Pendiente",
+                                MessagesDetail = JsonConvert.SerializeObject(listMessagesAdd)
+                            });
+
+                            var objData = new Data()
+                            {
+                                data = new MessagesModel()
+                                {
+                                    to = newToNumber,
+                                    from = fromNumber,
+                                    messages = listMessagesAdd.OrderBy(x => x.order).ToList()
+                                }
                             };
 
-                            listMessagesAdd.Add(data);
+                            objData.data.id = objInsertResult.Id;
+
+                            await SendConsumerRabbitMQ(objData);
                         }
-
-                        var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
-                        {
-                            To = toNumber,
-                            From = fromNumber,
-                            Company = companySetting,
-                            Definition = DefinitionSetting,
-                            Status = "Pendiente",
-                            MessagesDetail = JsonConvert.SerializeObject(listMessagesAdd)
-                        });
-
-                        var objData = new Data()
-                        {
-                            data = new MessagesModel()
-                            {
-                                to = toNumber,
-                                from = fromNumber,
-                                messages = listMessagesAdd.OrderBy(x => x.order).ToList()
-                            }
-                        };
-
-                        objData.data.id = objInsertResult.Id;
-
-                        await SendConsumerRabbitMQ(objData);
                     }
                 }
 
@@ -392,50 +481,55 @@ namespace MessengerServicePublisher.Core.Services
 
                 int indiceArray = 0;
 
-                foreach (var number in distictToNumberMessagesNotSender)
+                foreach (var toNumber in distictToNumberMessagesNotSender)
                 {
-                    List<MessagesDetailModel> listMessagesAdd = new List<MessagesDetailModel>();
+                    var newToNumber = FilterNumberText(toNumber);
 
-                    var listMessagesNotSenderFilter = listMessagesWithNotSender.Where(x => x.To == number);
-
-                    foreach (var item in listMessagesNotSenderFilter)
+                    if (!string.IsNullOrWhiteSpace(newToNumber.Trim()))
                     {
-                        var objMessagesDetailModel = new MessagesDetailModel()
+                        List<MessagesDetailModel> listMessagesAdd = new List<MessagesDetailModel>();
+
+                        var listMessagesNotSenderFilter = listMessagesWithNotSender.Where(x => x.To == newToNumber);
+
+                        foreach (var item in listMessagesNotSenderFilter)
                         {
-                            fileUrl = item.FileUrl,
-                            text = item.Text,
-                            order = item.Id,
+                            var objMessagesDetailModel = new MessagesDetailModel()
+                            {
+                                fileUrl = item.FileUrl,
+                                text = item.Text,
+                                order = item.Id,
+                            };
+
+                            listMessagesAdd.Add(objMessagesDetailModel);
+                        }
+
+                        var objData = new Data()
+                        {
+                            data = new MessagesModel()
+                            {
+                                to = newToNumber,
+                                from = arrayPhoneSenders[indiceArray],
+                                messages = listMessagesAdd.OrderBy(x => x.order).ToList()
+                            }
                         };
 
-                        listMessagesAdd.Add(objMessagesDetailModel);
-                    }
-
-                    var objData = new Data()
-                    {
-                        data = new MessagesModel()
+                        var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
                         {
-                            to = number,
-                            from = arrayPhoneSenders[indiceArray],
-                            messages = listMessagesAdd.OrderBy(x => x.order).ToList()
+                            To = objData.data.to,
+                            From = objData.data.from,
+                            Company = companySetting,
+                            Definition = DefinitionSetting,
+                            Status = "Pendiente",
+                            MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
                         }
-                    };
+                        );
 
-                    var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
-                    {
-                        To = objData.data.to,
-                        From = objData.data.from,
-                        Company = companySetting,
-                        Definition = DefinitionSetting,
-                        Status = "Pendiente",
-                        MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
+                        objData.data.id = objInsertResult.Id;
+
+                        await SendConsumerRabbitMQ(objData);
+
+                        indiceArray = (indiceArray + 1) % arrayPhoneSenders.Count;
                     }
-                    );
-
-                    objData.data.id = objInsertResult.Id;
-
-                    await SendConsumerRabbitMQ(objData);
-
-                    indiceArray = (indiceArray + 1) % arrayPhoneSenders.Count;
                 }
 
                 if (_appSettings.DeleteDataSendBd.Trim().ToUpper() == "TRUE")
@@ -452,6 +546,7 @@ namespace MessengerServicePublisher.Core.Services
                 _logger.LogInformation("Error en GetMessagesImbox : " + ex.Message.ToString());
             }
         }
+
         private static string ProcessMessageType2(string input)
         {
             // Dividir la cadena en fragmentos usando "||" como delimitador
@@ -465,25 +560,43 @@ namespace MessengerServicePublisher.Core.Services
 
             return result.Trim();
         }
-        private static string FilterNumberText(string texto)
+        static string FilterNumberText(string texto)
         {
+            // Eliminamos espacios y tabulaciones.
+            texto = texto.Replace(" ", "").Replace("\t", "");
+
+            // Eliminamos cadenas vacías al inicio o al final de la entrada.
+            texto = texto.Trim(';');
+
             // Separamos la cadena por ;.
             string[] subcadenas = texto.Split(';');
 
             // Filtramos y modificamos las subcadenas según los criterios especificados.
             string[] subcadenasModificadas = subcadenas
-                .Where(subcadena => subcadena.Length == 9 && EsNumero(subcadena))  // Filtramos por longitud igual a 9 y es número.
-                .Select(subcadena => "51" + subcadena)                             // Agregamos "51" al inicio de cada subcadena.
+                .Where(subcadena =>
+                {
+                    // Filtramos por longitud igual a 9 o longitud igual a 11.
+                    return (subcadena.Length == 9 || subcadena.Length == 11);
+                })
+                .Select(subcadena =>
+                {
+                    // Si la subcadena tiene una longitud de 9, agregamos "51" al inicio.
+                    if (subcadena.Length == 9)
+                    {
+                        return "51" + subcadena;
+                    }
+                    else
+                    {
+                        // En otros casos, devolvemos la subcadena sin modificar.
+                        return subcadena;
+                    }
+                })
                 .ToArray();
 
             // Unimos las subcadenas modificadas.
             string textoModificado = string.Join(";", subcadenasModificadas);
 
             return textoModificado;
-        }
-        private static bool EsNumero(string valor)
-        {
-            return int.TryParse(valor, out _);
         }
     }
 }
