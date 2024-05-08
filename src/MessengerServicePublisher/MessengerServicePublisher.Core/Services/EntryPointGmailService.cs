@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
+using System;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -40,6 +41,7 @@ namespace MessengerServicePublisher.Core.Services
                     try
                     {
                         var mailsGmail = service.GetMessages(query: $"{_appSettings.SenderGmail}", markRead: false, filterDefinitionTextBody: _appSettings.Definition);
+                        _logger.LogInformation("OK PermissonGmail");
                     }
                     catch (Exception ex)
                     {
@@ -47,7 +49,6 @@ namespace MessengerServicePublisher.Core.Services
                         _logger.LogInformation($"PermissonGmail " + ex.Message.ToString());
                     }
                 }
-
                 _logger.LogInformation("FIN PermissonGmail");
             }
             catch (Exception ex)
@@ -74,7 +75,7 @@ namespace MessengerServicePublisher.Core.Services
                 switch (companySetting)
                 {
                     case Constans.COMANY_PROSEGUR:
-                        if (GetDataFrom == Constans.GMAIL)  await GetMessagesImboxProsegurGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
+                        if (GetDataFrom == Constans.GMAIL) await GetMessagesImboxProsegurGmail(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
                         if (GetDataFrom == Constans.BD) await GetMessagesProsegurBd(companySetting: companySetting, DefinitionSetting: DefinitionSetting, SenderPhoneSetting: SenderPhoneSetting);
                         break;
                     case Constans.COMANY_BIDASSOA:
@@ -133,7 +134,9 @@ namespace MessengerServicePublisher.Core.Services
 
                 var service = GmailHelper.GetGmailService(applicationName: _appSettings.NameProyectoGmail, ClientId: _appSettings.ClientIdGmail, ClientSecret: _appSettings.ClientSecretGmail);
 
-                var mailsGmail = service.GetMessages(query: $"{_appSettings.SenderGmail}", markRead: false, filterDefinitionTextBody: DefinitionSetting);
+                bool makeRead = string.IsNullOrEmpty(_appSettings.MarkRead) ? false : bool.Parse(_appSettings.MarkRead);
+
+                var mailsGmail = service.GetMessages(query: $"{_appSettings.SenderGmail}", makeRead, filterDefinitionTextBody: DefinitionSetting);
 
                 _logger.LogInformation("Se obtuvo " + mailsGmail.Count() + " correos de Gmail");
 
@@ -180,6 +183,10 @@ namespace MessengerServicePublisher.Core.Services
 
                     var text = objGmailSetting.Description;
 
+                    var fileUrl = "";
+
+                    bool isCall = false;
+
                     foreach (var itemVariableGmail in objArrayVariablesGmail)
                     {
                         string variable = itemVariableGmail.GetType().GetProperty("Variable")?.GetValue(itemVariableGmail)?.ToString() ?? "";
@@ -196,7 +203,10 @@ namespace MessengerServicePublisher.Core.Services
                         case 2:
                             text = ProcessMessageType2(text);
                             break;
-                        default:
+                        case 3:// para llamadas 
+                            fileUrl = text.TrimEnd('\n');
+                            text = "";
+                            isCall = true;
                             break;
                     }
 
@@ -212,12 +222,13 @@ namespace MessengerServicePublisher.Core.Services
                                     from = arrayPhoneSenders[indexDistribution],
                                     messages = new List<MessagesDetailModel>()
                                     {
-                                            new MessagesDetailModel()
-                                            {
+                                        new MessagesDetailModel()
+                                        {
                                             text = text,
-                                            fileUrl = "",
-                                         }
-                                    }
+                                            fileUrl = fileUrl,
+                                        }
+                                    },
+                                    isCall = isCall
                                 }
                             };
 
@@ -249,7 +260,7 @@ namespace MessengerServicePublisher.Core.Services
         private async Task GetMessagesProsegurBd(string companySetting, string DefinitionSetting, string SenderPhoneSetting)
         {
             try
-            { 
+            {
                 List<string> arrayPhoneSenders = SenderPhoneSetting.Split(';').ToList();
 
                 using var scope = _serviceScopeFactoryLocator.CreateScope();
@@ -262,7 +273,13 @@ namespace MessengerServicePublisher.Core.Services
                  scope.ServiceProvider
                      .GetService<IMessagesPreviewsRepository>();
 
+                var repositoryCallPreviews =
+                scope.ServiceProvider
+                    .GetService<ICallPreviewsRepository>();
+
                 var listMessages = await repositoryMessagesPreviews.GetMessagesPreviewByDefinition(companySetting, DefinitionSetting);
+
+                var listCalls = await repositoryCallPreviews.GetCallPreviewsByDefinition(companySetting, DefinitionSetting);
 
                 _logger.LogInformation("Se obtuvo " + listMessages.Count() + " mensajes BD prosegur");
 
@@ -314,7 +331,8 @@ namespace MessengerServicePublisher.Core.Services
                                 {
                                     to = newToNumber,
                                     from = fromNumber,
-                                    messages = listMessagesAdd.OrderBy(x => x.order).ToList()
+                                    messages = listMessagesAdd.OrderBy(x => x.order).ToList(),
+                                    isCall = false
                                 }
                             };
 
@@ -330,6 +348,7 @@ namespace MessengerServicePublisher.Core.Services
                 var distictToNumberMessagesNotSender = listMessagesWithNotSender.DistinctBy(x => x.To).Select(x => x.To).ToList();
 
                 int indiceArray = 0;
+
 
                 foreach (var toNumber in distictToNumberMessagesNotSender)
                 {
@@ -359,7 +378,8 @@ namespace MessengerServicePublisher.Core.Services
                             {
                                 to = newToNumber,
                                 from = arrayPhoneSenders[indiceArray],
-                                messages = listMessagesAdd.OrderBy(x => x.order).ToList()
+                                messages = listMessagesAdd.OrderBy(x => x.order).ToList(),
+                                isCall = false
                             }
                         };
 
@@ -379,16 +399,64 @@ namespace MessengerServicePublisher.Core.Services
                         await SendConsumerRabbitMQ(objData);
 
                         indiceArray = (indiceArray + 1) % arrayPhoneSenders.Count;
-                    }   
+                    }
+                }
+
+                foreach (var item in listCalls)
+                {
+                    List<MessagesDetailModel> listMessagesAdd = new List<MessagesDetailModel>();
+
+                    var objMessagesDetailModel = new MessagesDetailModel()
+                    {
+                        fileUrl = item.FileUrl,
+                        text = "",
+                        order = item.Id,
+                    };
+
+                    listMessagesAdd.Add(objMessagesDetailModel);
+
+                    var objData = new Data()
+                    {
+                        data = new MessagesModel()
+                        {
+                            to = item.To,
+                            from = item.From,
+                            messages = listMessagesAdd.OrderBy(x => x.order).ToList(),
+                            isCall = true
+                        }
+                    };
+
+                    var objInsertResult = await repositoryMessages.Add(new Entities.Messages()
+                    {
+                        To = objData.data.to,
+                        From = objData.data.from,
+                        Company = companySetting,
+                        Definition = DefinitionSetting,
+                        Status = "Pendiente",
+                        MessagesDetail = JsonConvert.SerializeObject(objData.data.messages)
+                    }
+                    );
+
+                    objData.data.id = objInsertResult.Id;
+
+                    await SendConsumerRabbitMQ(objData);
                 }
 
                 if (_appSettings.DeleteDataSendBd.Trim().ToUpper() == "TRUE")
                 {
-                    listMessagesWithNotSender.ForEach(e => e.Deleted = DateTime.Now);
+                    if (listMessages.Count > 0)
+                    {
+                        listMessages.ForEach(e => e.Deleted = DateTime.Now);
 
-                    listMessagesWithSender.ForEach(e => e.Deleted = DateTime.Now);
+                        await repositoryMessagesPreviews.DeleteList(listMessages);
+                    }
 
-                    await repositoryMessagesPreviews.DeleteList(listMessagesWithSender);
+                    if (listCalls.Count > 0)
+                    {
+                        listCalls.ForEach(e => e.Deleted = DateTime.Now);
+
+                        await repositoryCallPreviews.DeleteList(listCalls);
+                    }
                 }
             }
             catch (Exception ex)
@@ -464,7 +532,8 @@ namespace MessengerServicePublisher.Core.Services
                                 {
                                     to = newToNumber,
                                     from = fromNumber,
-                                    messages = listMessagesAdd.OrderBy(x => x.order).ToList()
+                                    messages = listMessagesAdd.OrderBy(x => x.order).ToList(),
+                                    isCall = false
                                 }
                             };
 
@@ -509,7 +578,8 @@ namespace MessengerServicePublisher.Core.Services
                             {
                                 to = newToNumber,
                                 from = arrayPhoneSenders[indiceArray],
-                                messages = listMessagesAdd.OrderBy(x => x.order).ToList()
+                                messages = listMessagesAdd.OrderBy(x => x.order).ToList(),
+                                isCall = false
                             }
                         };
 
@@ -534,11 +604,13 @@ namespace MessengerServicePublisher.Core.Services
 
                 if (_appSettings.DeleteDataSendBd.Trim().ToUpper() == "TRUE")
                 {
-                    listMessagesWithNotSender.ForEach(e => e.Deleted = DateTime.Now);
+                    if (listMessages.Count > 0)
+                    {
+                        listMessages.ForEach(e => e.Deleted = DateTime.Now);
 
-                    listMessagesWithSender.ForEach(e => e.Deleted = DateTime.Now);
+                        await repositoryMessagesPreviews.DeleteList(listMessages);
+                    }
 
-                    await repositoryMessagesPreviews.DeleteList(listMessagesWithSender);
                 }
             }
             catch (Exception ex)
@@ -546,7 +618,6 @@ namespace MessengerServicePublisher.Core.Services
                 _logger.LogInformation("Error en GetMessagesImbox : " + ex.Message.ToString());
             }
         }
-
         private static string ProcessMessageType2(string input)
         {
             // Dividir la cadena en fragmentos usando "||" como delimitador

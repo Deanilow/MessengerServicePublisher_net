@@ -10,6 +10,7 @@ namespace MessengerServicePublisher.Core.Common
         public string ClientSecretGmail { get; set; }
         public string NameProyectoGmail { get; set; }
         public string PermissionGmail { get; set; }
+        public string MarkRead { get; set; }
         public string SenderPhone { get; set; }
         public string SenderGmail { get; set; }
         public string Company { get; set; }

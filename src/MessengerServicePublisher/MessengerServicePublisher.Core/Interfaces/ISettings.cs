@@ -8,6 +8,7 @@
         string ClientSecretGmail { get; set; }
         string NameProyectoGmail { get; set; }
         string PermissionGmail { get; set; }
+        string MarkRead { get; set; }
         string SenderPhone { get; set; }
         string SenderGmail { get; set; }
         string Company { get; set; }

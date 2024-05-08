@@ -19,6 +19,7 @@ public static class ConfigureServices
         services.AddScoped<IGmailSettingRepository, GmailSettingRepository>();
         services.AddScoped<IMessagesRepository, MessagesRepository>();
         services.AddScoped<IMessagesPreviewsRepository, MessagesPreviewsRepository>();
+        services.AddScoped<ICallPreviewsRepository, CallPreviewsRepository>();
         return services;
     }
 }

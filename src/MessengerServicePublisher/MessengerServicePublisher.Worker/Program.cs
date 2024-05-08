@@ -85,3 +85,8 @@ using (var scope = host.Services.CreateScope())
         //await timerChangeWorker.StopAsync(CancellationToken.None);
     }
 }
+
+
+//dotnet ef migrations add addCallPreviews --context ApplicationDbContext -p ../MessengerServicePublisher.Infrastructure/MessengerServicePublisher.Infrastructure.csproj -s MessengerServicePublisher.Worker.csproj -o Data/Migrations
+
+//dotnet ef database update -c ApplicationDbContext -p ../MessengerServicePublisher.Infrastructure/MessengerServicePublisher.Infrastructure.csproj -s MessengerServicePublisher.Worker.csproj

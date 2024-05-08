@@ -5,6 +5,7 @@
         public Guid id { get; set; }
         public string to { get; set; }
         public string from { get; set; }
+        public bool isCall { get; set; } = false;
         public List<MessagesDetailModel> messages { get; set; }
     }
     public class MessagesDetailModel

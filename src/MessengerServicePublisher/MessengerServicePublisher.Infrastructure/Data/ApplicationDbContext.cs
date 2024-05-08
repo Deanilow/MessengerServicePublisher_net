@@ -10,7 +10,10 @@ namespace MessengerServicePublisher.Infrastructure.Data
         public virtual DbSet<GmailSettings> GmailSettings { get; set; }
         public virtual DbSet<Messages> Messages { get; set; }
         public virtual DbSet<MessagesPreviews> MessagesPreviews { get; set; }
+        public virtual DbSet<CallPreviews> CallPreviews { get; set; }
+
         //public virtual DbSet<TimerSettings> TimerSettings { get; set; }
+
         //public virtual DbSet<TimerSettingsActivity> TimerSettingsActivity { get; set; }
 
         private readonly AuditableEntitySaveChangesInterceptor _auditableEntitySaveChangesInterceptor;
@@ -30,6 +33,7 @@ namespace MessengerServicePublisher.Infrastructure.Data
             builder.Entity<GmailSettings>().ToTable("GmailSettings", "wsp");
             builder.Entity<Messages>().ToTable("Messages", "wsp");
             builder.Entity<MessagesPreviews>().ToTable("MessagesPreviews", "wsp");
+            builder.Entity<CallPreviews>().ToTable("CallPreviews", "wsp");
             //builder.Entity<TimerSettings>().ToTable("TimerSettings", "wsp");
             //builder.Entity<TimerSettingsActivity>().ToTable("TimerSettingsActivity", "wsp");
 
